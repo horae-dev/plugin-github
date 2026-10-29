@@ -1,0 +1,19 @@
+{
+  "tool": "github.review_requests",
+  "params": {
+    "today": "2026-10-30",
+    "repos": [
+      "acme-org/empty"
+    ]
+  },
+  "expect": {
+    "data": {
+      "kind": "review_requested",
+      "day": "2026-10-30",
+      "items": [],
+      "truncated": false,
+      "skipped": 0
+    },
+    "intents": []
+  }
+}

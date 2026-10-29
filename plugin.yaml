@@ -3,13 +3,20 @@
 # interpreter that has this package (horae-sdk README, "The command").
 name: github
 version: 0.1.0
-horae: '>=0'
-description: Proposes a task to reply to each message of a folder.
+horae: '>=0.1,<0.2'
+description: GitHub review requests, assignments and mentions as tasks.
 license: Apache-2.0
+homepage: https://github.com/horae-dev/plugin-github
 provides:
   sources:
-  - github.inbox
+  - github.review_requests
+  - github.assigned
+  - github.mentions
 permissions:
+  network:
+  - api.github.com
+  secrets:
+  - GITHUB_TOKEN
   intents:
   - task.create
 runtime:

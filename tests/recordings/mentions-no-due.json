@@ -1,0 +1,33 @@
+{
+  "tool": "github.mentions",
+  "params": {
+    "today": "2026-10-30",
+    "due_in_days": null
+  },
+  "expect": {
+    "data": {
+      "kind": "mentioned",
+      "day": "2026-10-30",
+      "items": [
+        {
+          "fingerprint": "github:issue:I_kwDOSYNTH0021",
+          "type": "issue",
+          "repo": "acme-org/docs",
+          "number": 21,
+          "title": "Who owns the style guide?",
+          "url": "https://github.com/acme-org/docs/issues/21",
+          "due": null
+        }
+      ],
+      "truncated": false,
+      "skipped": 0
+    },
+    "intents": [
+      {
+        "type": "task.create",
+        "title": "Answer mention in acme-org/docs\\#21: Who owns the style guide?",
+        "fingerprint": "github:issue:I_kwDOSYNTH0021"
+      }
+    ]
+  }
+}

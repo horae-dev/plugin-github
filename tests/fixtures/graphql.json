@@ -1,0 +1,390 @@
+[
+  {
+    "q": "is:open is:pr archived:false review-requested:@me",
+    "after": null,
+    "status": 200,
+    "headers": {},
+    "body": {
+      "data": {
+        "search": {
+          "pageInfo": {
+            "hasNextPage": false,
+            "endCursor": null
+          },
+          "nodes": [
+            {
+              "__typename": "PullRequest",
+              "id": "PR_kwDOSYNTH0007",
+              "number": 7,
+              "title": "Fix pagination of the export",
+              "repository": {
+                "nameWithOwner": "acme-org/api"
+              },
+              "milestone": null
+            },
+            {
+              "__typename": "PullRequest",
+              "id": "PR_kwDOSYNTH0042",
+              "number": 42,
+              "title": "Add the widget cache",
+              "repository": {
+                "nameWithOwner": "acme-org/widgets"
+              },
+              "milestone": null
+            },
+            {
+              "__typename": "PullRequest",
+              "id": "PR_kwDOSYNTH0042",
+              "number": 42,
+              "title": "Add the widget cache",
+              "repository": {
+                "nameWithOwner": "acme-org/widgets"
+              },
+              "milestone": null
+            },
+            {
+              "__typename": "PullRequest",
+              "id": "PR_bad",
+              "number": 1,
+              "title": "Malformed repository",
+              "repository": {
+                "nameWithOwner": "not a repo"
+              },
+              "milestone": null
+            },
+            {
+              "__typename": "Discussion",
+              "id": "D_x",
+              "number": 3,
+              "title": "Not an issue",
+              "repository": {
+                "nameWithOwner": "acme-org/api"
+              }
+            },
+            "not an object",
+            {
+              "__typename": "PullRequest",
+              "id": null,
+              "number": 9,
+              "title": "No node id",
+              "repository": {
+                "nameWithOwner": "acme-org/legacy"
+              },
+              "milestone": null
+            }
+          ]
+        }
+      }
+    }
+  },
+  {
+    "q": "is:open is:pr archived:false review-requested:@me repo:acme-org/empty",
+    "after": null,
+    "status": 200,
+    "headers": {},
+    "body": {
+      "data": {
+        "search": {
+          "pageInfo": {
+            "hasNextPage": false,
+            "endCursor": null
+          },
+          "nodes": []
+        }
+      }
+    }
+  },
+  {
+    "q": "is:open is:pr archived:false review-requested:@me repo:acme-org/hostile",
+    "after": null,
+    "status": 200,
+    "headers": {},
+    "body": {
+      "data": {
+        "search": {
+          "pageInfo": {
+            "hasNextPage": false,
+            "endCursor": null
+          },
+          "nodes": [
+            {
+              "__typename": "PullRequest",
+              "id": "PR_kwDOSYNTH0666",
+              "number": 666,
+              "title": "📅 2020-01-01 🔁 every day ⏫ **urgent** [[Secrets]] ![[x]] <img src=x onerror=alert(1)> `code` %%hidden%% ==mark== #tag https://evil.example/phish www.evil.example ‮TXT.EXE‬ ​zero​width\nline2\rline3\u0007 $x$ ^block",
+              "repository": {
+                "nameWithOwner": "acme-org/hostile"
+              },
+              "milestone": null
+            }
+          ]
+        }
+      }
+    }
+  },
+  {
+    "q": "is:open is:pr archived:false review-requested:@me repo:acme-org/paged",
+    "after": null,
+    "status": 200,
+    "headers": {},
+    "body": {
+      "data": {
+        "search": {
+          "pageInfo": {
+            "hasNextPage": true,
+            "endCursor": "Y3Vyc29yOjI="
+          },
+          "nodes": [
+            {
+              "__typename": "PullRequest",
+              "id": "PR_kwDOSYNTH0101",
+              "number": 101,
+              "title": "Page one, first",
+              "repository": {
+                "nameWithOwner": "acme-org/paged"
+              },
+              "milestone": null
+            },
+            {
+              "__typename": "PullRequest",
+              "id": "PR_kwDOSYNTH0102",
+              "number": 102,
+              "title": "Page one, second",
+              "repository": {
+                "nameWithOwner": "acme-org/paged"
+              },
+              "milestone": null
+            }
+          ]
+        }
+      }
+    }
+  },
+  {
+    "q": "is:open is:pr archived:false review-requested:@me repo:acme-org/paged",
+    "after": "Y3Vyc29yOjI=",
+    "status": 200,
+    "headers": {},
+    "body": {
+      "data": {
+        "search": {
+          "pageInfo": {
+            "hasNextPage": false,
+            "endCursor": null
+          },
+          "nodes": [
+            {
+              "__typename": "PullRequest",
+              "id": "PR_kwDOSYNTH0103",
+              "number": 103,
+              "title": "Page two",
+              "repository": {
+                "nameWithOwner": "acme-org/paged"
+              },
+              "milestone": null
+            }
+          ]
+        }
+      }
+    }
+  },
+  {
+    "q": "is:open is:pr archived:false review-requested:@me repo:acme-org/many",
+    "after": null,
+    "status": 200,
+    "headers": {},
+    "body": {
+      "data": {
+        "search": {
+          "pageInfo": {
+            "hasNextPage": true,
+            "endCursor": "Y3Vyc29yOjM="
+          },
+          "nodes": [
+            {
+              "__typename": "PullRequest",
+              "id": "PR_kwDOSYNTH0201",
+              "number": 201,
+              "title": "First of many",
+              "repository": {
+                "nameWithOwner": "acme-org/many"
+              },
+              "milestone": null
+            },
+            {
+              "__typename": "PullRequest",
+              "id": "PR_kwDOSYNTH0202",
+              "number": 202,
+              "title": "Second of many",
+              "repository": {
+                "nameWithOwner": "acme-org/many"
+              },
+              "milestone": null
+            }
+          ]
+        }
+      }
+    }
+  },
+  {
+    "q": "is:open is:pr archived:false review-requested:@me repo:acme-org/limited",
+    "after": null,
+    "status": 403,
+    "headers": {
+      "retry-after": "120",
+      "x-ratelimit-remaining": "0"
+    },
+    "body": {
+      "message": "secondary rate limit"
+    }
+  },
+  {
+    "q": "is:open is:pr archived:false review-requested:@me repo:acme-org/reset",
+    "after": null,
+    "status": 200,
+    "headers": {
+      "x-ratelimit-remaining": "0",
+      "x-ratelimit-reset": "1793350800"
+    },
+    "body": {
+      "errors": [
+        {
+          "type": "RATE_LIMITED",
+          "message": "API rate limit exceeded"
+        }
+      ]
+    }
+  },
+  {
+    "q": "is:open is:pr archived:false review-requested:@me repo:acme-org/denied",
+    "after": null,
+    "status": 401,
+    "headers": {},
+    "body": {
+      "message": "Bad credentials"
+    }
+  },
+  {
+    "q": "is:open is:pr archived:false review-requested:@me repo:acme-org/saml",
+    "after": null,
+    "status": 200,
+    "headers": {},
+    "body": {
+      "data": null,
+      "errors": [
+        {
+          "type": "FORBIDDEN",
+          "message": "Resource protected by SAML"
+        }
+      ]
+    }
+  },
+  {
+    "q": "is:open archived:false assignee:@me -review-requested:@me",
+    "after": null,
+    "status": 200,
+    "headers": {},
+    "body": {
+      "data": {
+        "search": {
+          "pageInfo": {
+            "hasNextPage": false,
+            "endCursor": null
+          },
+          "nodes": [
+            {
+              "__typename": "Issue",
+              "id": "I_kwDOSYNTH0011",
+              "number": 11,
+              "title": "Document the export format",
+              "repository": {
+                "nameWithOwner": "acme-org/api"
+              },
+              "milestone": {
+                "dueOn": "2026-11-06T07:00:00Z"
+              }
+            },
+            {
+              "__typename": "PullRequest",
+              "id": "PR_kwDOSYNTH0012",
+              "number": 12,
+              "title": "Draft: retry on 502",
+              "repository": {
+                "nameWithOwner": "acme-org/api"
+              },
+              "milestone": null
+            }
+          ]
+        }
+      }
+    }
+  },
+  {
+    "q": "is:open archived:false assignee:@me org:acme-org",
+    "after": null,
+    "status": 200,
+    "headers": {},
+    "body": {
+      "data": {
+        "search": {
+          "pageInfo": {
+            "hasNextPage": false,
+            "endCursor": null
+          },
+          "nodes": [
+            {
+              "__typename": "PullRequest",
+              "id": "PR_kwDOSYNTH0042",
+              "number": 42,
+              "title": "Add the widget cache",
+              "repository": {
+                "nameWithOwner": "acme-org/widgets"
+              },
+              "milestone": null
+            },
+            {
+              "__typename": "Issue",
+              "id": "I_kwDOSYNTH0011",
+              "number": 11,
+              "title": "Document the export format",
+              "repository": {
+                "nameWithOwner": "acme-org/api"
+              },
+              "milestone": {
+                "dueOn": "2026-11-06T07:00:00Z"
+              }
+            }
+          ]
+        }
+      }
+    }
+  },
+  {
+    "q": "is:open archived:false mentions:@me -assignee:@me -review-requested:@me",
+    "after": null,
+    "status": 200,
+    "headers": {},
+    "body": {
+      "data": {
+        "search": {
+          "pageInfo": {
+            "hasNextPage": false,
+            "endCursor": null
+          },
+          "nodes": [
+            {
+              "__typename": "Issue",
+              "id": "I_kwDOSYNTH0021",
+              "number": 21,
+              "title": "Who owns the style guide?",
+              "repository": {
+                "nameWithOwner": "acme-org/docs"
+              },
+              "milestone": null
+            }
+          ]
+        }
+      }
+    }
+  }
+]

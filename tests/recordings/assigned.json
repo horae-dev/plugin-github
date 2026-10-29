@@ -1,0 +1,47 @@
+{
+  "tool": "github.assigned",
+  "params": {
+    "today": "2026-10-30"
+  },
+  "expect": {
+    "data": {
+      "kind": "assigned",
+      "day": "2026-10-30",
+      "items": [
+        {
+          "fingerprint": "github:issue:I_kwDOSYNTH0011",
+          "type": "issue",
+          "repo": "acme-org/api",
+          "number": 11,
+          "title": "Document the export format",
+          "url": "https://github.com/acme-org/api/issues/11",
+          "due": "2026-11-06"
+        },
+        {
+          "fingerprint": "github:pr:PR_kwDOSYNTH0012",
+          "type": "pr",
+          "repo": "acme-org/api",
+          "number": 12,
+          "title": "Draft: retry on 502",
+          "url": "https://github.com/acme-org/api/pull/12",
+          "due": null
+        }
+      ],
+      "truncated": false,
+      "skipped": 0
+    },
+    "intents": [
+      {
+        "type": "task.create",
+        "title": "Work on acme-org/api\\#11: Document the export format",
+        "fingerprint": "github:issue:I_kwDOSYNTH0011",
+        "due": "2026-11-06"
+      },
+      {
+        "type": "task.create",
+        "title": "Work on acme-org/api\\#12: Draft: retry on 502",
+        "fingerprint": "github:pr:PR_kwDOSYNTH0012"
+      }
+    ]
+  }
+}

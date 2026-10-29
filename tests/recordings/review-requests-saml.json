@@ -1,0 +1,12 @@
+{
+  "tool": "github.review_requests",
+  "params": {
+    "today": "2026-10-30",
+    "repos": [
+      "acme-org/saml"
+    ]
+  },
+  "expect": {
+    "error": "github: query failed (FORBIDDEN)"
+  }
+}
