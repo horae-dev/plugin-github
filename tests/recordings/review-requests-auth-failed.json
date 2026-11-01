@@ -1,0 +1,12 @@
+{
+  "tool": "github.review_requests",
+  "params": {
+    "today": "2026-10-30",
+    "repos": [
+      "acme-org/denied"
+    ]
+  },
+  "expect": {
+    "error": "github: authentication failed (GITHUB_TOKEN refused)"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "tool": "github.review_requests",
+  "params": {
+    "today": "2026-02-30"
+  },
+  "expect": {
+    "error": "github: today must be a real date"
+  }
+}

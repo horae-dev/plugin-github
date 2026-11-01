@@ -1,0 +1,27 @@
+# Written by `uv run python -m horae_github --manifest > plugin.yaml`; tests/test_manifest.py
+# checks it is what the SDK writes. When installing, pin runtime.command to an absolute
+# interpreter that has this package (horae-sdk README, "The command").
+name: github
+version: 0.1.0
+horae: '>=0.1,<0.2'
+description: GitHub review requests, assignments and mentions as tasks.
+license: Apache-2.0
+homepage: https://github.com/horae-dev/plugin-github
+provides:
+  sources:
+  - github.review_requests
+  - github.assigned
+  - github.mentions
+permissions:
+  network:
+  - api.github.com
+  secrets:
+  - GITHUB_TOKEN
+  intents:
+  - task.create
+runtime:
+  protocol: mcp-stdio
+  command:
+  - python3
+  - -m
+  - horae_github

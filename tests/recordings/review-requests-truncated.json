@@ -1,0 +1,54 @@
+{
+  "tool": "github.review_requests",
+  "params": {
+    "today": "2026-10-30",
+    "repos": [
+      "acme-org/many"
+    ],
+    "max_items": 2
+  },
+  "expect": {
+    "data": {
+      "kind": "review_requested",
+      "day": "2026-10-30",
+      "items": [
+        {
+          "fingerprint": "github:pr:PR_kwDOSYNTH0201",
+          "type": "pr",
+          "repo": "acme-org/many",
+          "number": 201,
+          "title": "First of many",
+          "url": "https://github.com/acme-org/many/pull/201",
+          "due": "2026-11-02"
+        },
+        {
+          "fingerprint": "github:pr:PR_kwDOSYNTH0202",
+          "type": "pr",
+          "repo": "acme-org/many",
+          "number": 202,
+          "title": "Second of many",
+          "url": "https://github.com/acme-org/many/pull/202",
+          "due": "2026-11-02"
+        }
+      ],
+      "truncated": true,
+      "skipped": 0,
+      "partial": false,
+      "errors": 0
+    },
+    "intents": [
+      {
+        "type": "task.create",
+        "title": "Review acme-org/many\\#201: First of many",
+        "fingerprint": "github:pr:PR_kwDOSYNTH0201",
+        "due": "2026-11-02"
+      },
+      {
+        "type": "task.create",
+        "title": "Review acme-org/many\\#202: Second of many",
+        "fingerprint": "github:pr:PR_kwDOSYNTH0202",
+        "due": "2026-11-02"
+      }
+    ]
+  }
+}

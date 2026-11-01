@@ -1,0 +1,68 @@
+{
+  "tool": "github.review_requests",
+  "params": {
+    "today": "2026-10-30",
+    "repos": [
+      "acme-org/paged"
+    ]
+  },
+  "expect": {
+    "data": {
+      "kind": "review_requested",
+      "day": "2026-10-30",
+      "items": [
+        {
+          "fingerprint": "github:pr:PR_kwDOSYNTH0101",
+          "type": "pr",
+          "repo": "acme-org/paged",
+          "number": 101,
+          "title": "Page one, first",
+          "url": "https://github.com/acme-org/paged/pull/101",
+          "due": "2026-11-02"
+        },
+        {
+          "fingerprint": "github:pr:PR_kwDOSYNTH0102",
+          "type": "pr",
+          "repo": "acme-org/paged",
+          "number": 102,
+          "title": "Page one, second",
+          "url": "https://github.com/acme-org/paged/pull/102",
+          "due": "2026-11-02"
+        },
+        {
+          "fingerprint": "github:pr:PR_kwDOSYNTH0103",
+          "type": "pr",
+          "repo": "acme-org/paged",
+          "number": 103,
+          "title": "Page two",
+          "url": "https://github.com/acme-org/paged/pull/103",
+          "due": "2026-11-02"
+        }
+      ],
+      "truncated": false,
+      "skipped": 0,
+      "partial": false,
+      "errors": 0
+    },
+    "intents": [
+      {
+        "type": "task.create",
+        "title": "Review acme-org/paged\\#101: Page one, first",
+        "fingerprint": "github:pr:PR_kwDOSYNTH0101",
+        "due": "2026-11-02"
+      },
+      {
+        "type": "task.create",
+        "title": "Review acme-org/paged\\#102: Page one, second",
+        "fingerprint": "github:pr:PR_kwDOSYNTH0102",
+        "due": "2026-11-02"
+      },
+      {
+        "type": "task.create",
+        "title": "Review acme-org/paged\\#103: Page two",
+        "fingerprint": "github:pr:PR_kwDOSYNTH0103",
+        "due": "2026-11-02"
+      }
+    ]
+  }
+}

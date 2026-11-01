@@ -1,0 +1,65 @@
+{
+  "tool": "github.review_requests",
+  "params": {
+    "today": "2026-10-30"
+  },
+  "expect": {
+    "data": {
+      "kind": "review_requested",
+      "day": "2026-10-30",
+      "items": [
+        {
+          "fingerprint": "github:pr:PR_kwDOSYNTH0007",
+          "type": "pr",
+          "repo": "acme-org/api",
+          "number": 7,
+          "title": "Fix pagination of the export",
+          "url": "https://github.com/acme-org/api/pull/7",
+          "due": "2026-11-02"
+        },
+        {
+          "fingerprint": "github:pr:acme-org-legacy:9::eb98308acfe6cecc",
+          "type": "pr",
+          "repo": "acme-org/legacy",
+          "number": 9,
+          "title": "No node id",
+          "url": "https://github.com/acme-org/legacy/pull/9",
+          "due": "2026-11-02"
+        },
+        {
+          "fingerprint": "github:pr:PR_kwDOSYNTH0042",
+          "type": "pr",
+          "repo": "acme-org/widgets",
+          "number": 42,
+          "title": "Add the widget cache",
+          "url": "https://github.com/acme-org/widgets/pull/42",
+          "due": "2026-11-02"
+        }
+      ],
+      "truncated": false,
+      "skipped": 3,
+      "partial": false,
+      "errors": 0
+    },
+    "intents": [
+      {
+        "type": "task.create",
+        "title": "Review acme-org/api\\#7: Fix pagination of the export",
+        "fingerprint": "github:pr:PR_kwDOSYNTH0007",
+        "due": "2026-11-02"
+      },
+      {
+        "type": "task.create",
+        "title": "Review acme-org/legacy\\#9: No node id",
+        "fingerprint": "github:pr:acme-org-legacy:9::eb98308acfe6cecc",
+        "due": "2026-11-02"
+      },
+      {
+        "type": "task.create",
+        "title": "Review acme-org/widgets\\#42: Add the widget cache",
+        "fingerprint": "github:pr:PR_kwDOSYNTH0042",
+        "due": "2026-11-02"
+      }
+    ]
+  }
+}
