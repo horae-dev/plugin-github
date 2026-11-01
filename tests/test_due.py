@@ -45,6 +45,14 @@ def test_the_day_follows_the_instance_time_zone() -> None:
     [
         ("30/10/2026", None, "YYYY-MM-DD"),
         ("2026-02-30", None, "real date"),
+        ("2026-10-30\n", None, "YYYY-MM-DD"),
+        ("\uff12\uff10\uff12\uff16-10-30", None, "YYYY-MM-DD"),  # fullwidth digits
+        (
+            "\u0662\u0660\u0662\u0666-\u0661\u0660-\u0663\u0660",
+            None,
+            "YYYY-MM-DD",
+        ),  # Arabic-Indic digits
+        ('"2026-10-30"', None, "YYYY-MM-DD"),
         (None, "Mars/Olympus", "unknown time zone"),
         (None, "../../etc/passwd", "unknown time zone"),
     ],
@@ -69,6 +77,10 @@ def test_offsets_are_bounded() -> None:
         ("2026-11-06T07:00:00Z", date(2026, 11, 6)),
         ("2026-11-06T23:59:59Z", date(2026, 11, 6)),
         ("2026-02-30T07:00:00Z", None),
+        ("2026-11-06T07:00:00.123+02:00", date(2026, 11, 6)),
+        ("2026-11-06T07:00:00Z\n", None),
+        ("2026-11-06Tjunk", None),
+        ("\u0662\u0660\u0662\u0666-11-06T07:00:00Z", None),
         ("soon", None),
         (None, None),
         (20261106, None),

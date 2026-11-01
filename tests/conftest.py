@@ -29,7 +29,9 @@ class FakeTransport:
         self.fixtures = fixtures
         self.requests: list[dict[str, Any]] = []
 
-    def post(self, path: str, body: bytes, headers: Mapping[str, str]) -> Response:
+    def post(
+        self, path: str, body: bytes, headers: Mapping[str, str], *, deadline: float
+    ) -> Response:
         assert path == "/graphql"
         assert headers["Authorization"] == f"Bearer {TOKEN}"
         request = json.loads(body)

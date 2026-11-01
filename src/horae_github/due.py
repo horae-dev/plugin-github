@@ -11,8 +11,11 @@ from collections.abc import Callable, Mapping
 from datetime import UTC, date, datetime, timedelta
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-DATE_RE = re.compile(r"^[0-9]{4}-[0-9]{2}-[0-9]{2}$")
-DATETIME_RE = re.compile(r"^([0-9]{4}-[0-9]{2}-[0-9]{2})T")
+DATE_RE = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}")
+DATETIME_RE = re.compile(
+    r"([0-9]{4}-[0-9]{2}-[0-9]{2})T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\.[0-9]{1,9})?(?:Z|[+-][0-9]{2}:[0-9]{2})"
+)
+"""Both are used with `fullmatch` only (`$` would accept a trailing line break)."""
 MAX_OFFSET_DAYS = 365
 
 
@@ -40,7 +43,7 @@ def run_day(
     clock: Callable[[], datetime],
 ) -> date:
     if today is not None:
-        if not DATE_RE.match(today):
+        if not DATE_RE.fullmatch(today):
             raise DueError("github: today must be YYYY-MM-DD")
         try:
             return date.fromisoformat(today)
@@ -59,7 +62,8 @@ def add_days(day: date, days: int | None) -> date | None:
 
 
 def add_business_days(day: date, days: int | None) -> date | None:
-    """`days` working days (Monday to Friday) after `day`; 0 is `day` itself. No holidays."""
+    """`days` working days (Monday to Friday) after `day`; 0 is `day` itself, even on a
+    weekend (a Saturday run with 0 is due that Saturday). No holidays."""
     if days is None:
         return None
     while days > 0:
@@ -72,10 +76,11 @@ def add_business_days(day: date, days: int | None) -> date | None:
 def milestone_day(due_on: object) -> date | None:
     """A milestone's due date. GitHub stores a date and reports it as a UTC timestamp
     (`2026-11-06T07:00:00Z` for 6 November), so the UTC calendar date is the one set; reading
-    it in the instance time zone could move it a day earlier west of UTC."""
+    it in the instance time zone could move it a day earlier west of UTC. A past milestone
+    gives a past due date: the task is overdue at once."""
     if not isinstance(due_on, str):
         return None
-    match = DATETIME_RE.match(due_on)
+    match = DATETIME_RE.fullmatch(due_on)
     if match is None:
         return None
     try:

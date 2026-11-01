@@ -25,10 +25,21 @@
           "title": "Draft: retry on 502",
           "url": "https://github.com/acme-org/api/pull/12",
           "due": null
+        },
+        {
+          "fingerprint": "github:pr:PR_kwDOSYNTH0042",
+          "type": "pr",
+          "repo": "acme-org/widgets",
+          "number": 42,
+          "title": "Add the widget cache",
+          "url": "https://github.com/acme-org/widgets/pull/42",
+          "due": null
         }
       ],
       "truncated": false,
-      "skipped": 0
+      "skipped": 0,
+      "partial": false,
+      "errors": 0
     },
     "intents": [
       {
@@ -41,6 +52,11 @@
         "type": "task.create",
         "title": "Work on acme-org/api\\#12: Draft: retry on 502",
         "fingerprint": "github:pr:PR_kwDOSYNTH0012"
+      },
+      {
+        "type": "task.create",
+        "title": "Work on acme-org/widgets\\#42: Add the widget cache",
+        "fingerprint": "github:pr:PR_kwDOSYNTH0042"
       }
     ]
   }

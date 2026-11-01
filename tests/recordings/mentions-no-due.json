@@ -10,6 +10,15 @@
       "day": "2026-10-30",
       "items": [
         {
+          "fingerprint": "github:issue:I_kwDOSYNTH0011",
+          "type": "issue",
+          "repo": "acme-org/api",
+          "number": 11,
+          "title": "Document the export format",
+          "url": "https://github.com/acme-org/api/issues/11",
+          "due": null
+        },
+        {
           "fingerprint": "github:issue:I_kwDOSYNTH0021",
           "type": "issue",
           "repo": "acme-org/docs",
@@ -20,9 +29,16 @@
         }
       ],
       "truncated": false,
-      "skipped": 0
+      "skipped": 0,
+      "partial": false,
+      "errors": 0
     },
     "intents": [
+      {
+        "type": "task.create",
+        "title": "Answer mention in acme-org/api\\#11: Document the export format",
+        "fingerprint": "github:issue:I_kwDOSYNTH0011"
+      },
       {
         "type": "task.create",
         "title": "Answer mention in acme-org/docs\\#21: Who owns the style guide?",

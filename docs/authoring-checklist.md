@@ -1,5 +1,7 @@
 # Plugin authoring checklist
 
+> Vendored from [horae-dev/template-plugin](https://github.com/horae-dev/template-plugin) (`docs/authoring-checklist.md`). Change it there first, then copy it here, so plugins keep one checklist.
+
 Run through this before you open a pull request, and again before a release. It points to the
 sources instead of repeating them; when they disagree with this page, they win. The pull
 request template links here.

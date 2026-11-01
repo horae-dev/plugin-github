@@ -40,7 +40,9 @@
         }
       ],
       "truncated": false,
-      "skipped": 0
+      "skipped": 0,
+      "partial": false,
+      "errors": 0
     },
     "intents": [
       {

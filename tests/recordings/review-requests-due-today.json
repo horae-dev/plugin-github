@@ -38,7 +38,9 @@
         }
       ],
       "truncated": false,
-      "skipped": 2
+      "skipped": 3,
+      "partial": false,
+      "errors": 0
     },
     "intents": [
       {

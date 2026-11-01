@@ -12,11 +12,14 @@ open a pull request chooses its title.
 
 **One task per item.** The fingerprint is `github:pr:<node id>` or `github:issue:<node id>`:
 the item's identity, not the kind that found it, so a pull request that is both assigned and
-waiting for your review is the same task wherever it comes from. On top of that, with
-`skip_covered` (the default) `github.assigned` leaves out what `github.review_requests`
-returns and `github.mentions` leaves out both (search qualifiers `-review-requested:@me`,
-`-assignee:@me`), so one run proposes each item once, with the strongest kind's title and due
-date: review request, then assignment, then mention.
+waiting for your review is the same task wherever it comes from. With `skip_covered` (off by
+default) `github.assigned` also leaves out what `github.review_requests` returns and
+`github.mentions` leaves out both (search qualifiers `-review-requested:@me`,
+`-assignee:@me`), so one run proposes each item once, with the strongest kind's title.
+
+**Filters.** Each `orgs`, `users` and `repos` value is its own search (at most
+`MAX_SEARCHES` per call), and the results are merged, each node once: an item matches when it
+matches any of the values. `exclude_repos` applies to every search.
 
 The token is the declared secret `GITHUB_TOKEN`, read at call time; it never appears in data,
 intents, errors or logs.
@@ -47,9 +50,19 @@ PERMISSIONS = Permissions(intents=["task.create"], network=[HOST], secrets=[SECR
 
 MAX_ITEMS = 200
 MAX_FILTERS = 20
-LOGIN_RE = re.compile(r"^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})$")
-REPO_RE = re.compile(r"^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})/[A-Za-z0-9._-]{1,100}$")
-NODE_ID_RE = re.compile(r"^[A-Za-z0-9_=-]{1,100}$")
+"""`exclude_repos` values."""
+MAX_SEARCHES = 8
+"""`orgs`, `users` and `repos` values together: one search each."""
+LOGIN_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9_-]{0,38}")
+"""A user or organisation login; `_` for Enterprise Managed Users (`ada_acme`)."""
+REPO_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9_-]{0,38}/[A-Za-z0-9._-]{1,100}")
+"""An `owner/name` filter value."""
+RETURNED_REPO_RE = re.compile(r"[^\s/?#%\\\x00-\x1f\x7f]{1,100}/[^\s/?#%\\\x00-\x1f\x7f]{1,100}")
+"""A repository GitHub returned: kept unless it could not be one (whitespace, control
+characters, a second `/`, or `?#%\\` that would change the link built from it); GitHub's own
+naming rules are not applied, so a valid item is never dropped by a stricter pattern."""
+NODE_ID_RE = re.compile(r"[A-Za-z0-9_=-]{1,100}")
+"""All four are used with `fullmatch` only (`$` would accept a trailing line break)."""
 TYPES = {"PullRequest": ("pr", "pull"), "Issue": ("issue", "issues")}
 
 ClientFactory = Callable[[str], Client]
@@ -61,6 +74,7 @@ class Kind:
     name: str
     tool: str
     query: str
+    """The search qualifiers, `@me` included."""
     covered: str
     """Qualifiers that leave out what a stronger kind returns (`skip_covered`)."""
     verb: str
@@ -93,7 +107,7 @@ def default_client(token: str) -> Client:
     return Client(token, Transport())
 
 
-def search_query(
+def search_queries(
     kind: Kind,
     *,
     orgs: Sequence[str],
@@ -101,25 +115,41 @@ def search_query(
     repos: Sequence[str],
     exclude_repos: Sequence[str],
     skip_covered: bool,
-) -> str:
-    """The search string: the kind's qualifiers, then the filters. Several `org:`, `user:` or
-    `repo:` filters match any of them (GitHub ORs a repeated qualifier)."""
-    parts = [kind.query]
-    if skip_covered and kind.covered:
-        parts.append(kind.covered)
-    for qualifier, values, pattern in (
-        ("org:", orgs, LOGIN_RE),
-        ("user:", users, LOGIN_RE),
-        ("repo:", repos, REPO_RE),
-        ("-repo:", exclude_repos, REPO_RE),
+    direct_only: bool = False,
+) -> list[str]:
+    """The search strings: the kind's qualifiers, then one `org:`, `user:` or `repo:` value
+    per search (one search without any), then every `-repo:` exclusion.
+
+    One value per search because GitHub ANDs qualifiers of different kinds (`org:a repo:b/c`
+    matches nothing outside `a`): searches run separately and merged mean "any of them"."""
+    query = kind.query
+    if direct_only:
+        query = query.replace("review-requested:@me", "user-review-requested:@me")
+    head = [query, kind.covered] if skip_covered and kind.covered else [query]
+    if len(exclude_repos) > MAX_FILTERS:
+        raise PluginError(f"github: at most {MAX_FILTERS} exclude_repos values")
+    excluded = [
+        "-repo:" + _checked(value, REPO_RE, "exclude_repos")
+        for value in dict.fromkeys(exclude_repos)
+    ]
+    scopes: list[str] = []
+    for qualifier, values, pattern, name in (
+        ("org:", orgs, LOGIN_RE, "org"),
+        ("user:", users, LOGIN_RE, "user"),
+        ("repo:", repos, REPO_RE, "repo"),
     ):
-        if len(values) > MAX_FILTERS:
-            raise PluginError(f"github: at most {MAX_FILTERS} values per filter")
-        for value in dict.fromkeys(values):
-            if not pattern.match(value):
-                raise PluginError(f"github: invalid {qualifier.strip('-:')} filter")
-            parts.append(qualifier + value)
-    return " ".join(parts)
+        scopes += [qualifier + _checked(value, pattern, name) for value in dict.fromkeys(values)]
+    if len(scopes) > MAX_SEARCHES:
+        raise PluginError(
+            f"github: at most {MAX_SEARCHES} orgs, users and repos values in all (one search each)"
+        )
+    return [" ".join([*head, *scope, *excluded]) for scope in ([[s] for s in scopes] or [[]])]
+
+
+def _checked(value: object, pattern: re.Pattern[str], name: str) -> str:
+    if not isinstance(value, str) or not pattern.fullmatch(value):
+        raise PluginError(f"github: invalid {name} filter")
+    return value
 
 
 @dataclass(frozen=True)
@@ -144,16 +174,19 @@ class Item:
         return f"https://github.com/{self.repo}/{self.url_part}/{self.number}"
 
 
-def parse(node: Mapping[str, Any]) -> Item | None:
+def parse(node: object) -> Item | None:
     """One search node, or `None` when it is not a well-formed issue or pull request."""
-    names = TYPES.get(node.get("__typename"))  # type: ignore[arg-type]
+    if not isinstance(node, dict):
+        return None
+    typename = node.get("__typename")
+    names = TYPES.get(typename) if isinstance(typename, str) else None
     repository = node.get("repository")
     repo = repository.get("nameWithOwner") if isinstance(repository, dict) else None
     number = node.get("number")
     if (
         names is None
         or not isinstance(repo, str)
-        or not REPO_RE.match(repo)
+        or not RETURNED_REPO_RE.fullmatch(repo)
         or type(number) is not int
         or not 0 < number < 2**31
     ):
@@ -164,7 +197,7 @@ def parse(node: Mapping[str, Any]) -> Item | None:
     return Item(
         type=names[0],
         url_part=names[1],
-        node_id=node_id if isinstance(node_id, str) and NODE_ID_RE.match(node_id) else None,
+        node_id=node_id if isinstance(node_id, str) and NODE_ID_RE.fullmatch(node_id) else None,
         repo=repo,
         number=number,
         title=title if isinstance(title, str) else "",
@@ -200,16 +233,18 @@ def build(
         today: str | None,
         timezone: str | None,
         skip_covered: bool = False,
+        direct_only: bool = False,
     ) -> Output:
         if type(max_items) is not int or not 1 <= max_items <= MAX_ITEMS:
             raise PluginError(f"github: max_items is 1 to {MAX_ITEMS}")
-        query = search_query(
+        queries = search_queries(
             kind,
             orgs=orgs or [],
             users=users or [],
             repos=repos or [],
             exclude_repos=exclude_repos or [],
             skip_covered=skip_covered,
+            direct_only=direct_only,
         )
         try:
             day = due.run_day(today, timezone, environ, clock)
@@ -219,7 +254,7 @@ def build(
         if not token:
             raise PluginError(f"github: {SECRET} is not set")
         try:
-            found = client(token).search(query, max_items=max_items)
+            found = client(token).search(queries, max_items=max_items)
         except GitHubError as error:
             raise PluginError(str(error)) from None
         items: dict[str, Item] = {}
@@ -235,6 +270,8 @@ def build(
         tasks_: list[dict[str, Any]] = []
         for item in ordered:
             when = due_for(item, day)
+            # TODO(horae-dev/horae#122): pass `link=item.url` once `task.create` has a link
+            # field; until then the link is only in the returned data.
             task = intents.task_create(
                 f"{kind.verb} {item.repo}#{item.number}: {item.title}",
                 key=item.fingerprint,
@@ -259,6 +296,8 @@ def build(
                 "items": data,
                 "truncated": found.truncated,
                 "skipped": skipped,
+                "partial": found.errors > 0,
+                "errors": found.errors,
             },
             intents=tasks_,
         )
@@ -274,9 +313,11 @@ def build(
         max_items: int = 50,
         today: str | None = None,
         timezone: str | None = None,
+        direct_only: bool = False,
     ) -> Output:
-        """Open pull requests whose review is requested from you. Due
-        `due_in_business_days` working days after the run's day (0: that day; null: none)."""
+        """Open pull requests whose review is requested from you or a team you are in
+        (`direct_only`: from you only). Due `due_in_business_days` working days after the
+        run's day (0: that day, even on a weekend; null: none)."""
         _offset(due_in_business_days)
         return collect(
             REVIEW,
@@ -288,6 +329,7 @@ def build(
             max_items=max_items,
             today=today,
             timezone=timezone,
+            direct_only=direct_only,
         )
 
     @plugin.source(f"{NAME}.{ASSIGNED.tool}")
@@ -295,7 +337,7 @@ def build(
         call: Call,
         milestone_due: bool = True,
         due_in_days: int | None = None,
-        skip_covered: bool = True,
+        skip_covered: bool = False,
         orgs: list[str] | None = None,
         users: list[str] | None = None,
         repos: list[str] | None = None,
@@ -330,7 +372,7 @@ def build(
     def mentions(
         call: Call,
         due_in_days: int | None = 2,
-        skip_covered: bool = True,
+        skip_covered: bool = False,
         orgs: list[str] | None = None,
         users: list[str] | None = None,
         repos: list[str] | None = None,

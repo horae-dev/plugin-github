@@ -7,6 +7,32 @@
     ]
   },
   "expect": {
-    "error": "github: query failed (FORBIDDEN)"
+    "data": {
+      "kind": "review_requested",
+      "day": "2026-10-30",
+      "items": [
+        {
+          "fingerprint": "github:pr:PR_kwDOSYNTH0051",
+          "type": "pr",
+          "repo": "acme-org/saml",
+          "number": 51,
+          "title": "Bump the SSO client",
+          "url": "https://github.com/acme-org/saml/pull/51",
+          "due": "2026-11-02"
+        }
+      ],
+      "truncated": false,
+      "skipped": 1,
+      "partial": true,
+      "errors": 1
+    },
+    "intents": [
+      {
+        "type": "task.create",
+        "title": "Review acme-org/saml\\#51: Bump the SSO client",
+        "fingerprint": "github:pr:PR_kwDOSYNTH0051",
+        "due": "2026-11-02"
+      }
+    ]
   }
 }

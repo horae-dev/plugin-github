@@ -270,11 +270,36 @@
     "status": 200,
     "headers": {},
     "body": {
-      "data": null,
+      "data": {
+        "search": {
+          "pageInfo": {
+            "hasNextPage": false,
+            "endCursor": null
+          },
+          "nodes": [
+            {
+              "__typename": "PullRequest",
+              "id": "PR_kwDOSYNTH0051",
+              "number": 51,
+              "title": "Bump the SSO client",
+              "repository": {
+                "nameWithOwner": "acme-org/saml"
+              },
+              "milestone": null
+            },
+            null
+          ]
+        }
+      },
       "errors": [
         {
           "type": "FORBIDDEN",
-          "message": "Resource protected by SAML"
+          "message": "Resource protected by organization SAML enforcement. You must grant your Personal Access token access to this organization.",
+          "path": [
+            "search",
+            "nodes",
+            1
+          ]
         }
       ]
     }
@@ -292,6 +317,56 @@
             "endCursor": null
           },
           "nodes": [
+            {
+              "__typename": "Issue",
+              "id": "I_kwDOSYNTH0011",
+              "number": 11,
+              "title": "Document the export format",
+              "repository": {
+                "nameWithOwner": "acme-org/api"
+              },
+              "milestone": {
+                "dueOn": "2026-11-06T07:00:00Z"
+              }
+            },
+            {
+              "__typename": "PullRequest",
+              "id": "PR_kwDOSYNTH0012",
+              "number": 12,
+              "title": "Draft: retry on 502",
+              "repository": {
+                "nameWithOwner": "acme-org/api"
+              },
+              "milestone": null
+            }
+          ]
+        }
+      }
+    }
+  },
+  {
+    "q": "is:open archived:false assignee:@me",
+    "after": null,
+    "status": 200,
+    "headers": {},
+    "body": {
+      "data": {
+        "search": {
+          "pageInfo": {
+            "hasNextPage": false,
+            "endCursor": null
+          },
+          "nodes": [
+            {
+              "__typename": "PullRequest",
+              "id": "PR_kwDOSYNTH0042",
+              "number": 42,
+              "title": "Add the widget cache",
+              "repository": {
+                "nameWithOwner": "acme-org/widgets"
+              },
+              "milestone": null
+            },
             {
               "__typename": "Issue",
               "id": "I_kwDOSYNTH0011",
@@ -381,6 +456,46 @@
                 "nameWithOwner": "acme-org/docs"
               },
               "milestone": null
+            }
+          ]
+        }
+      }
+    }
+  },
+  {
+    "q": "is:open archived:false mentions:@me",
+    "after": null,
+    "status": 200,
+    "headers": {},
+    "body": {
+      "data": {
+        "search": {
+          "pageInfo": {
+            "hasNextPage": false,
+            "endCursor": null
+          },
+          "nodes": [
+            {
+              "__typename": "Issue",
+              "id": "I_kwDOSYNTH0021",
+              "number": 21,
+              "title": "Who owns the style guide?",
+              "repository": {
+                "nameWithOwner": "acme-org/docs"
+              },
+              "milestone": null
+            },
+            {
+              "__typename": "Issue",
+              "id": "I_kwDOSYNTH0011",
+              "number": 11,
+              "title": "Document the export format",
+              "repository": {
+                "nameWithOwner": "acme-org/api"
+              },
+              "milestone": {
+                "dueOn": "2026-11-06T07:00:00Z"
+              }
             }
           ]
         }
