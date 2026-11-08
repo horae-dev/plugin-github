@@ -109,6 +109,8 @@ class _Page:
 class Client:
     """Searches with one token. The token goes only into the `Authorization` header."""
 
+    secret = "GITHUB_TOKEN"  # noqa: S105 (the secret's name, shown in the 401 message)
+
     def __init__(
         self,
         token: str,
@@ -218,9 +220,15 @@ class Client:
             "Accept-Encoding": "identity",
             "User-Agent": USER_AGENT,
         }
+        return self._request(
+            lambda: self._transport.post(PATH, body, headers, deadline=deadline), deadline
+        )
+
+    def _request(self, send: Callable[[], Response], deadline: float) -> Response:
+        """`send()` with one retry of a gateway error, then the status check."""
         for attempt in range(2):
             try:
-                answer = self._transport.post(PATH, body, headers, deadline=deadline)
+                answer = send()
             except DeadlineExceeded:
                 raise _OutOfTime("github: request timed out") from None
             except TransportError as error:
@@ -230,11 +238,16 @@ class Client:
                 self._sleep(RETRY_PAUSE_S)
                 continue
             break
+        self._check(answer)
+        return answer
+
+    def _check(self, answer: Response) -> None:
+        """Raise the fixed error for any status but 200."""
         status = answer.status
         if status == 200:
-            return answer
+            return
         if status == 401:
-            raise GitHubError("github: authentication failed (GITHUB_TOKEN refused)")
+            raise GitHubError(f"github: authentication failed ({self.secret} refused)")
         if status in (403, 429):
             limited = self._rate_limited(status, answer)
             if limited is not None:

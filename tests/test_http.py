@@ -28,6 +28,7 @@ class Server:
     def __init__(self) -> None:
         self.answers: list[tuple[int, dict[str, str], bytes]] = []
         self.seen: list[dict[str, Any]] = []
+        self.get_answers: list[tuple[int, dict[str, str], bytes]] = []
         self.delay = threading.Event()
         server = self
 
@@ -52,6 +53,15 @@ class Server:
                 if body == b"SLOW":
                     server.delay.wait(2)
                     return
+                self.wfile.write(body)
+
+            def do_GET(self) -> None:
+                status, headers, body = server.get_answers.pop(0)
+                self.send_response(status)
+                for name, value in headers.items():
+                    self.send_header(name, value)
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
                 self.wfile.write(body)
 
             def log_message(self, format: str, *args: Any) -> None:
@@ -350,3 +360,23 @@ def test_a_content_length_of_other_digits_is_not_trusted(server: Server) -> None
     server.answers += [(200, {"Content-Length": "¹²"}, page(1))]
     answer = server.transport().post("/graphql", b"{}", {})
     assert json.loads(answer.body)["data"]["search"]["nodes"][0]["number"] == 1
+
+
+def test_get_request_is_a_get_without_a_body(server: Server) -> None:
+    seen: list[tuple[str, str, bytes]] = []
+
+    def connect(host: str, port: int, timeout: float) -> http.client.HTTPConnection:
+        connection = http.client.HTTPConnection("127.0.0.1", server.port, timeout=timeout)
+        original = connection.request
+
+        def record(method: str, url: str, body: Any = None, headers: Any = None) -> None:
+            seen.append((method, url, body or b""))
+            original(method, url, body=body, headers=headers or {})
+
+        connection.request = record  # type: ignore[method-assign,assignment]
+        return connection
+
+    server.get_answers.append((200, {"X-Poll-Interval": "60"}, b"[]"))
+    answer = Transport(connect=connect).get("/notifications?all=false", {"Authorization": "x"})
+    assert (answer.status, answer.headers["x-poll-interval"], answer.body) == (200, "60", b"[]")
+    assert seen == [("GET", "/notifications?all=false", b"")]

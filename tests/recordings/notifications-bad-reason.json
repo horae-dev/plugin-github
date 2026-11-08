@@ -1,0 +1,13 @@
+{
+  "tool": "github.notifications",
+  "params": {
+    "today": "2026-10-30",
+    "reasons": [
+      "mention",
+      "everything"
+    ]
+  },
+  "expect": {
+    "error": "github: invalid reasons filter"
+  }
+}

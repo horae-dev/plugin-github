@@ -1,0 +1,311 @@
+[
+  {
+    "name": "default",
+    "path": "/notifications?all=false&participating=true&per_page=50&page=1",
+    "status": 200,
+    "headers": {
+      "x-poll-interval": "60",
+      "x-ratelimit-remaining": "4990",
+      "x-ratelimit-reset": "1793350800",
+      "last-modified": "Fri, 30 Oct 2026 08:00:00 GMT"
+    },
+    "body": [
+      {
+        "id": "1",
+        "unread": true,
+        "reason": "review_requested",
+        "updated_at": "2026-10-30T08:00:00Z",
+        "subject": {
+          "title": "Fix pagination of the export",
+          "url": "https://api.github.com/repos/acme-org/api/pulls/7",
+          "latest_comment_url": null,
+          "type": "PullRequest"
+        },
+        "repository": {
+          "full_name": "acme-org/api"
+        }
+      },
+      {
+        "id": "2",
+        "unread": true,
+        "reason": "mention",
+        "updated_at": "2026-10-30T08:00:00Z",
+        "subject": {
+          "title": "Crash on empty export ‮txt.exe 📅 2020-01-01 🔁 every day [x](https://evil.example)",
+          "url": "https://api.github.com/repos/acme-org/api/issues/12",
+          "latest_comment_url": null,
+          "type": "Issue"
+        },
+        "repository": {
+          "full_name": "acme-org/api"
+        }
+      },
+      {
+        "id": "3",
+        "unread": true,
+        "reason": "assign",
+        "updated_at": "2026-10-30T08:00:00Z",
+        "subject": {
+          "title": "Widget colours",
+          "url": "https://api.github.com/repos/acme-org/widgets/issues/5",
+          "latest_comment_url": null,
+          "type": "Issue"
+        },
+        "repository": {
+          "full_name": "acme-org/api"
+        }
+      },
+      {
+        "id": "4",
+        "unread": true,
+        "reason": "subscribed",
+        "updated_at": "2026-10-30T08:00:00Z",
+        "subject": {
+          "title": "Watching only",
+          "url": "https://api.github.com/repos/acme-org/api/issues/99",
+          "latest_comment_url": null,
+          "type": "Issue"
+        },
+        "repository": {
+          "full_name": "acme-org/api"
+        }
+      },
+      {
+        "id": "5",
+        "unread": true,
+        "reason": "mention",
+        "updated_at": "2026-10-30T08:00:00Z",
+        "subject": {
+          "title": "v1.0",
+          "url": "https://api.github.com/repos/acme-org/api/releases/1",
+          "latest_comment_url": null,
+          "type": "Release"
+        },
+        "repository": {
+          "full_name": "acme-org/api"
+        }
+      },
+      {
+        "id": "6",
+        "unread": true,
+        "reason": "mention",
+        "updated_at": "2026-10-30T08:00:00Z",
+        "subject": {
+          "title": "Roadmap talk",
+          "url": null,
+          "latest_comment_url": null,
+          "type": "Discussion"
+        },
+        "repository": {
+          "full_name": "acme-org/api"
+        }
+      },
+      {
+        "id": "7",
+        "unread": true,
+        "reason": "mention",
+        "updated_at": "2026-10-30T08:00:00Z",
+        "subject": {
+          "title": "CI failed",
+          "url": "https://api.github.com/repos/acme-org/api/check-suites/3",
+          "latest_comment_url": null,
+          "type": "CheckSuite"
+        },
+        "repository": {
+          "full_name": "acme-org/api"
+        }
+      },
+      {
+        "id": "8",
+        "unread": true,
+        "reason": "mention",
+        "updated_at": "2026-10-30T08:00:00Z",
+        "subject": {
+          "title": "Wrong host",
+          "url": "https://evil.example/repos/acme-org/api/pulls/1",
+          "latest_comment_url": null,
+          "type": "PullRequest"
+        },
+        "repository": {
+          "full_name": "acme-org/api"
+        }
+      },
+      {
+        "id": "9",
+        "unread": true,
+        "reason": "mention",
+        "updated_at": "2026-10-30T08:00:00Z",
+        "subject": {
+          "title": "Type and URL disagree",
+          "url": "https://api.github.com/repos/acme-org/api/issues/3",
+          "latest_comment_url": null,
+          "type": "PullRequest"
+        },
+        "repository": {
+          "full_name": "acme-org/api"
+        }
+      },
+      {
+        "id": "10",
+        "unread": true,
+        "reason": "team_mention",
+        "updated_at": "2026-10-30T08:00:00Z",
+        "subject": {
+          "title": "Bump the lockfile",
+          "url": "https://api.github.com/repos/other-org/tools/pulls/21",
+          "latest_comment_url": null,
+          "type": "PullRequest"
+        },
+        "repository": {
+          "full_name": "other-org/tools"
+        }
+      },
+      {
+        "id": "11",
+        "unread": true,
+        "reason": "mention",
+        "updated_at": "2026-10-30T08:00:00Z",
+        "subject": {
+          "title": "Dot segment",
+          "url": "https://api.github.com/repos/acme-org/../pulls/4",
+          "latest_comment_url": null,
+          "type": "PullRequest"
+        },
+        "repository": {
+          "full_name": "acme-org/api"
+        }
+      }
+    ]
+  },
+  {
+    "name": "paged-1",
+    "path": "/notifications?all=false&participating=true&per_page=50&page=1&since=2026-10-01T00%3A00%3A00Z",
+    "status": 200,
+    "headers": {
+      "x-poll-interval": "60",
+      "x-ratelimit-remaining": "4990",
+      "x-ratelimit-reset": "1793350800",
+      "last-modified": "Fri, 30 Oct 2026 08:00:00 GMT",
+      "link": "<https://api.github.com/notifications?page=2>; rel=\"next\", <https://api.github.com/notifications?page=3>; rel=\"last\""
+    },
+    "body": [
+      {
+        "id": "20",
+        "unread": true,
+        "reason": "mention",
+        "updated_at": "2026-10-30T08:00:00Z",
+        "subject": {
+          "title": "Paged 100",
+          "url": "https://api.github.com/repos/acme-org/paged/pulls/100",
+          "latest_comment_url": null,
+          "type": "PullRequest"
+        },
+        "repository": {
+          "full_name": "acme-org/paged"
+        }
+      },
+      {
+        "id": "21",
+        "unread": true,
+        "reason": "mention",
+        "updated_at": "2026-10-30T08:00:00Z",
+        "subject": {
+          "title": "Paged 101",
+          "url": "https://api.github.com/repos/acme-org/paged/pulls/101",
+          "latest_comment_url": null,
+          "type": "PullRequest"
+        },
+        "repository": {
+          "full_name": "acme-org/paged"
+        }
+      }
+    ]
+  },
+  {
+    "name": "paged-2",
+    "path": "/notifications?all=false&participating=true&per_page=50&page=2&since=2026-10-01T00%3A00%3A00Z",
+    "status": 200,
+    "headers": {
+      "x-poll-interval": "60",
+      "x-ratelimit-remaining": "4990",
+      "x-ratelimit-reset": "1793350800",
+      "last-modified": "Fri, 30 Oct 2026 08:00:00 GMT"
+    },
+    "body": [
+      {
+        "id": "30",
+        "unread": true,
+        "reason": "mention",
+        "updated_at": "2026-10-30T08:00:00Z",
+        "subject": {
+          "title": "Paged 103",
+          "url": "https://api.github.com/repos/acme-org/paged/issues/103",
+          "latest_comment_url": null,
+          "type": "Issue"
+        },
+        "repository": {
+          "full_name": "acme-org/paged"
+        }
+      }
+    ]
+  },
+  {
+    "name": "limited-first",
+    "path": "/notifications?all=false&participating=true&per_page=50&page=1&since=2026-09-01T00%3A00%3A00Z",
+    "status": 200,
+    "headers": {
+      "x-poll-interval": "60",
+      "x-ratelimit-remaining": "0",
+      "x-ratelimit-reset": "1793350800",
+      "last-modified": "Fri, 30 Oct 2026 08:00:00 GMT",
+      "link": "<https://api.github.com/notifications?page=2>; rel=\"next\", <https://api.github.com/notifications?page=3>; rel=\"last\""
+    },
+    "body": [
+      {
+        "id": "40",
+        "unread": true,
+        "reason": "mention",
+        "updated_at": "2026-10-30T08:00:00Z",
+        "subject": {
+          "title": "Last before the limit",
+          "url": "https://api.github.com/repos/acme-org/api/issues/40",
+          "latest_comment_url": null,
+          "type": "Issue"
+        },
+        "repository": {
+          "full_name": "acme-org/api"
+        }
+      }
+    ]
+  },
+  {
+    "name": "rate-limited",
+    "path": "/notifications?all=false&participating=true&per_page=50&page=1&since=2026-08-01T00%3A00%3A00Z",
+    "status": 403,
+    "headers": {
+      "x-ratelimit-remaining": "0",
+      "x-ratelimit-reset": "1793350620"
+    },
+    "body": {
+      "message": "API rate limit exceeded"
+    }
+  },
+  {
+    "name": "auth-failed",
+    "path": "/notifications?all=false&participating=true&per_page=50&page=1&since=2026-07-01T00%3A00%3A00Z",
+    "status": 401,
+    "headers": {},
+    "body": {
+      "message": "Bad credentials"
+    }
+  },
+  {
+    "name": "empty",
+    "path": "/notifications?all=false&participating=true&per_page=50&page=1&since=2026-06-01T00%3A00%3A00Z",
+    "status": 200,
+    "headers": {
+      "x-poll-interval": "120"
+    },
+    "body": []
+  }
+]

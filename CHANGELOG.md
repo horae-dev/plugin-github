@@ -2,6 +2,14 @@
 
 ## 0.2.0 (unreleased)
 
+- New source `github.notifications` (#3): unread participating notifications
+  (`GET /notifications?participating=true`, GET only, read state never modified) for pull
+  requests and issues as `task.create` intents; `reasons` filter, `since`, `X-Poll-Interval`
+  and rate-limit remaining reported, bounded pages under one deadline. New secret
+  `GITHUB_NOTIFICATIONS_TOKEN` (classic token, `notifications` scope; fine-grained tokens cannot
+  read notifications). Its fingerprints are the repository-and-number fallback (the API has
+  no node id), so they do not collapse with the other sources'.
+
 - Every task carries a link to its item (#2): the `task.create` intent now has `link`, the
   item's `https://github.com/<owner>/<repo>/pull|issues/<number>` URL (built from GitHub's
   repository name and the integer number, host fixed to github.com, never from its `url`

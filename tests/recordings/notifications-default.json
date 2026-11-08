@@ -1,0 +1,89 @@
+{
+  "tool": "github.notifications",
+  "params": {
+    "today": "2026-10-30"
+  },
+  "expect": {
+    "data": {
+      "kind": "notifications",
+      "day": "2026-10-30",
+      "items": [
+        {
+          "fingerprint": "github:pr:acme-org-api:7::ae375e1a5bbcb6f5",
+          "type": "pr",
+          "repo": "acme-org/api",
+          "number": 7,
+          "reason": "review_requested",
+          "title": "Fix pagination of the export",
+          "url": "https://github.com/acme-org/api/pull/7",
+          "due": "2026-11-01"
+        },
+        {
+          "fingerprint": "github:issue:acme-org-api:12::84ad2c707d579b4b",
+          "type": "issue",
+          "repo": "acme-org/api",
+          "number": 12,
+          "reason": "mention",
+          "title": "Crash on empty export txt.exe 📅 2020-01-01 🔁 every day [x](https://evil.example)",
+          "url": "https://github.com/acme-org/api/issues/12",
+          "due": "2026-11-01"
+        },
+        {
+          "fingerprint": "github:issue:acme-org-widgets:5::e70fc8323f778b0e",
+          "type": "issue",
+          "repo": "acme-org/widgets",
+          "number": 5,
+          "reason": "assign",
+          "title": "Widget colours",
+          "url": "https://github.com/acme-org/widgets/issues/5",
+          "due": "2026-11-01"
+        },
+        {
+          "fingerprint": "github:pr:other-org-tools:21::d00727064a8b4920",
+          "type": "pr",
+          "repo": "other-org/tools",
+          "number": 21,
+          "reason": "team_mention",
+          "title": "Bump the lockfile",
+          "url": "https://github.com/other-org/tools/pull/21",
+          "due": "2026-11-01"
+        }
+      ],
+      "truncated": false,
+      "skipped": 6,
+      "filtered": 1,
+      "poll_interval": 60,
+      "rate_limit_remaining": 4990
+    },
+    "intents": [
+      {
+        "type": "task.create",
+        "title": "Review acme-org/api\\#7: Fix pagination of the export",
+        "fingerprint": "github:pr:acme-org-api:7::ae375e1a5bbcb6f5",
+        "due": "2026-11-01",
+        "link": "https://github.com/acme-org/api/pull/7"
+      },
+      {
+        "type": "task.create",
+        "title": "Answer mention in acme-org/api\\#12: Crash on empty export txt.exe &#x1F4C5; 2020-01-01 &#x1F501; every day \\[x\\]\\(https\\://evil.example\\)",
+        "fingerprint": "github:issue:acme-org-api:12::84ad2c707d579b4b",
+        "due": "2026-11-01",
+        "link": "https://github.com/acme-org/api/issues/12"
+      },
+      {
+        "type": "task.create",
+        "title": "Work on acme-org/widgets\\#5: Widget colours",
+        "fingerprint": "github:issue:acme-org-widgets:5::e70fc8323f778b0e",
+        "due": "2026-11-01",
+        "link": "https://github.com/acme-org/widgets/issues/5"
+      },
+      {
+        "type": "task.create",
+        "title": "Answer mention in other-org/tools\\#21: Bump the lockfile",
+        "fingerprint": "github:pr:other-org-tools:21::d00727064a8b4920",
+        "due": "2026-11-01",
+        "link": "https://github.com/other-org/tools/pull/21"
+      }
+    ]
+  }
+}

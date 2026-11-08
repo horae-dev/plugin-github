@@ -1,0 +1,39 @@
+{
+  "tool": "github.notifications",
+  "params": {
+    "today": "2026-10-30",
+    "since": "2026-09-01T00:00:00Z"
+  },
+  "expect": {
+    "data": {
+      "kind": "notifications",
+      "day": "2026-10-30",
+      "items": [
+        {
+          "fingerprint": "github:issue:acme-org-api:40::7459e0d56522d56b",
+          "type": "issue",
+          "repo": "acme-org/api",
+          "number": 40,
+          "reason": "mention",
+          "title": "Last before the limit",
+          "url": "https://github.com/acme-org/api/issues/40",
+          "due": "2026-11-01"
+        }
+      ],
+      "truncated": true,
+      "skipped": 0,
+      "filtered": 0,
+      "poll_interval": 60,
+      "rate_limit_remaining": 0
+    },
+    "intents": [
+      {
+        "type": "task.create",
+        "title": "Answer mention in acme-org/api\\#40: Last before the limit",
+        "fingerprint": "github:issue:acme-org-api:40::7459e0d56522d56b",
+        "due": "2026-11-01",
+        "link": "https://github.com/acme-org/api/issues/40"
+      }
+    ]
+  }
+}

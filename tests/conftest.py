@@ -17,6 +17,7 @@ from horae_sdk import Plugin
 from horae_github import build
 from horae_github.client import Client
 from horae_github.http import Response
+from horae_github.notifications import NotificationsClient
 
 HERE = Path(__file__).parent
 TOKEN = "synthetic-test-token-0123456789"  # noqa: S105 (not a real token)
@@ -45,6 +46,33 @@ class FakeTransport:
         raise AssertionError(f"no fixture for {variables['q']!r} after {variables['after']!r}")
 
 
+NOTIFICATIONS_TOKEN = "synthetic-classic-token-9876543210"  # noqa: S105 (not a real token)
+
+
+class FakeNotifications:
+    """Answers `GET /notifications?...` from `tests/fixtures/notifications.json` by exact path.
+    It has no `post`, and records every method so tests can assert only GETs happen."""
+
+    def __init__(self) -> None:
+        self.fixtures: list[dict[str, Any]] = json.loads(
+            (HERE / "fixtures" / "notifications.json").read_text("utf-8")
+        )
+        self.paths: list[str] = []
+        self.methods: list[str] = []
+
+    def get(self, path: str, headers: Mapping[str, str], *, deadline: float) -> Response:
+        self.methods.append("GET")
+        assert headers["Authorization"] == f"Bearer {NOTIFICATIONS_TOKEN}"
+        assert "Content-Type" not in headers
+        self.paths.append(path)
+        for fixture in self.fixtures:
+            if fixture["path"] == path:
+                return Response(
+                    fixture["status"], fixture["headers"], json.dumps(fixture["body"]).encode()
+                )
+        raise AssertionError(f"no fixture for {path!r}")
+
+
 def load_fixtures() -> list[dict[str, Any]]:
     fixtures: list[dict[str, Any]] = json.loads(
         (HERE / "fixtures" / "graphql.json").read_text("utf-8")
@@ -58,8 +86,30 @@ def transport() -> FakeTransport:
 
 
 @pytest.fixture
-def plugin(transport: FakeTransport) -> Plugin:
+def notifications() -> FakeNotifications:
+    return FakeNotifications()
+
+
+@pytest.fixture
+def plugin(transport: FakeTransport, notifications: FakeNotifications) -> Plugin:
     def client(token: str) -> Client:
         return Client(token, transport, sleep=lambda _s: None, wall=lambda: WALL)  # type: ignore[arg-type]
 
-    return build(client, clock=lambda: NOW, environ={"GITHUB_TOKEN": TOKEN, "TZ": "Europe/Paris"})
+    def notifier(token: str) -> NotificationsClient:
+        return NotificationsClient(
+            token,
+            notifications,  # type: ignore[arg-type]
+            sleep=lambda _s: None,
+            wall=lambda: WALL,
+        )
+
+    return build(
+        client,
+        notifications_client=notifier,
+        clock=lambda: NOW,
+        environ={
+            "GITHUB_TOKEN": TOKEN,
+            "GITHUB_NOTIFICATIONS_TOKEN": NOTIFICATIONS_TOKEN,
+            "TZ": "Europe/Paris",
+        },
+    )

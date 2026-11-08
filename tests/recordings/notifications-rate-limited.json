@@ -1,0 +1,10 @@
+{
+  "tool": "github.notifications",
+  "params": {
+    "today": "2026-10-30",
+    "since": "2026-08-01T00:00:00Z"
+  },
+  "expect": {
+    "error": "github: rate limited; retry after 120 s"
+  }
+}
