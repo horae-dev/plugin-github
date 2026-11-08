@@ -9,6 +9,7 @@ from typing import Any
 import anyio
 import pytest
 from horae_sdk import Plugin
+from horae_sdk.tasks import is_task_link
 from horae_sdk.testing import Replayed
 from horae_sdk.testing import call as call_tool
 
@@ -202,6 +203,19 @@ def test_parse_refuses_malformed_nodes() -> None:
         {**good, "repository": {"nameWithOwner": "acme-org/a pi"}},
         {**good, "repository": {"nameWithOwner": "acme-org/api?x=1"}},
         {**good, "repository": {"nameWithOwner": "acme-org"}},
+        *(
+            {**good, "repository": {"nameWithOwner": repo}}
+            for repo in (
+                "a\u200b/b",  # zero-width space
+                "a/b\u00ad",  # soft hyphen
+                "a\u202e/b",  # bidi override
+                "a/b\ud800",  # lone surrogate
+                "../x",
+                "a/..",
+                "./x",
+                "a/.",
+            )
+        ),
         {**good, "__typename": "Commit"},
         {**good, "__typename": ["Issue"]},
         {**good, "__typename": None},
@@ -349,3 +363,77 @@ def test_a_past_milestone_is_a_past_due_date() -> None:
 def test_draft_pull_requests_are_included(plugin: Plugin) -> None:
     replayed = run(plugin, "github.assigned", today="2026-10-30")
     assert any(i["title"].startswith("Draft") for i in replayed.data["items"])
+
+
+@pytest.mark.parametrize(
+    ("tool", "params"),
+    [
+        ("github.review_requests", {}),
+        ("github.assigned", {"orgs": ["acme-org"]}),
+        ("github.mentions", {}),
+    ],
+)
+def test_every_task_carries_its_github_link(
+    plugin: Plugin, tool: str, params: dict[str, Any]
+) -> None:
+    replayed = run(plugin, tool, today="2026-10-30", **params)
+    assert replayed.intents
+    assert replayed.data is not None
+    for intent, item in zip(replayed.intents, replayed.data["items"], strict=True):
+        link = intent["link"]
+        assert intent["fingerprint"] == item["fingerprint"]
+        assert link == (
+            f"https://github.com/{item['repo']}/{'pull' if item['type'] == 'pr' else 'issues'}"
+            f"/{item['number']}"
+        )
+        assert item["url"] == link
+        assert is_task_link(link)
+        assert link.startswith("https://github.com/acme-org/")
+
+
+def covers(prefix: str, link: str) -> bool:
+    """The core's rule as documented (README, `link_prefix`): a case-sensitive path prefix
+    ending at a `/`, with at least one path segment."""
+    return prefix.endswith("/") and prefix.count("/") >= 4 and link.startswith(prefix)
+
+
+def test_emu_dotted_and_mixed_case_owners_get_exact_links() -> None:
+    transport = ByQuery(
+        {
+            "is:open archived:false mentions:@me": [
+                node(3, "EMU_corp/my.repo", "PullRequest"),
+                node(4, "Acme-Org/api"),
+            ]
+        }
+    )
+    replayed = run(plugin_over(transport), "github.mentions", today="2026-10-30")
+    links = {i["title"].split(": ")[-1]: i["link"] for i in replayed.intents}
+    assert links == {
+        "Item 3": "https://github.com/EMU_corp/my.repo/pull/3",
+        "Item 4": "https://github.com/Acme-Org/api/issues/4",
+    }
+    assert replayed.data is not None
+    assert replayed.data["skipped"] == 0
+    assert all(
+        covers("https://github.com/EMU_corp/", i["link"])
+        or covers("https://github.com/Acme-Org/", i["link"])
+        for i in replayed.intents
+    )
+    # the path is case-sensitive: a lower-case prefix does not cover Acme-Org
+    assert not covers("https://github.com/acme-org/", links["Item 4"])
+
+
+def test_unsafe_repositories_are_skipped_and_counted_not_raised() -> None:
+    bad = ["a\u200b/b", "a/b\u00ad", "a\u202e/b", "a/b\ud800", "../x", "a/.."]
+    transport = ByQuery(
+        {
+            "is:open archived:false mentions:@me": [
+                *(node(i + 1, repo) for i, repo in enumerate(bad)),
+                node(9, "Acme-Org/api"),
+            ]
+        }
+    )
+    replayed = run(plugin_over(transport), "github.mentions", today="2026-10-30")
+    assert [i["link"] for i in replayed.intents] == ["https://github.com/Acme-Org/api/issues/9"]
+    assert replayed.data is not None
+    assert replayed.data["skipped"] == len(bad)

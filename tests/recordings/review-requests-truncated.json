@@ -41,13 +41,15 @@
         "type": "task.create",
         "title": "Review acme-org/many\\#201: First of many",
         "fingerprint": "github:pr:PR_kwDOSYNTH0201",
-        "due": "2026-11-02"
+        "due": "2026-11-02",
+        "link": "https://github.com/acme-org/many/pull/201"
       },
       {
         "type": "task.create",
         "title": "Review acme-org/many\\#202: Second of many",
         "fingerprint": "github:pr:PR_kwDOSYNTH0202",
-        "due": "2026-11-02"
+        "due": "2026-11-02",
+        "link": "https://github.com/acme-org/many/pull/202"
       }
     ]
   }
