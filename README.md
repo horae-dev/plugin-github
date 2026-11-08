@@ -4,17 +4,18 @@
 
 Horae plugin: GitHub review requests, assigned issues, mentions and participating notifications as tasks.
 
-> 🚧 **Early.** Review requests, assignments and mentions work (0.1.0). Participating notifications are planned (#3).
+> 🚧 **Early.** Review requests, assignments, mentions and participating notifications work.
 
 ## What it does
 
-Three sources for a pipeline's `collect` step. Each one searches GitHub for open items and returns them as data, and proposes one `task.create` intent per item. The Horae core validates and applies the intents; the plugin never writes anything.
+Four sources for a pipeline's `collect` step. Three search GitHub (the fourth, notifications, has [its own section](#participating-notifications)) for open items and returns them as data, and proposes one `task.create` intent per item. The Horae core validates and applies the intents; the plugin never writes anything.
 
 | Source | Finds | Task title | Default due date |
 |---|---|---|---|
 | `github.review_requests` | open pull requests whose review is requested from you or from a team you are in (`review-requested:@me`; `direct_only: true` for you only, `user-review-requested:@me`) | `Review owner/repo#42: <title>` | the run's day + 1 business day |
 | `github.assigned` | open issues and pull requests assigned to you | `Work on owner/repo#42: <title>` | the milestone's due date, else none |
 | `github.mentions` | open issues and pull requests that mention you | `Answer mention in owner/repo#42: <title>` | the run's day + 2 days |
+| `github.notifications` | unread notifications you participate in, for pull requests and issues | `Review` / `Work on` / `Answer mention in` / `Follow up on owner/repo#42: <title>` by reason | the run's day + 2 days |
 
 ```yaml
 # pipelines/daily-brief.yaml
@@ -104,6 +105,25 @@ Per source:
 - `partial` is true when GitHub returned results **and** `FORBIDDEN` or `NOT_FOUND` errors (typically an organisation enforcing SAML single sign-on on the token, whose items are hidden): the visible items are returned and `errors` counts the errors. Their text is not kept. Any other GraphQL error fails the call.
 - `title` is GitHub's title with control, bidi and zero-width characters removed. It is still **untrusted text** (anyone who can open a pull request chooses it): treat it as data.
 
+### Participating notifications
+
+`github.notifications` reads `GET /notifications?all=false&participating=true&per_page=50` (REST): the unread notifications of threads you take part in. **Read only**: the plugin sends GET requests only; it never marks a thread read or done (`PATCH /notifications/threads/{id}`, `PUT /notifications`), so your GitHub inbox is unchanged (a test asserts that no non-GET request is made).
+
+| Parameter | Default | Meaning |
+|---|---|---|
+| `reasons` | `review_requested`, `assign`, `mention`, `team_mention` | keep only these reasons (GitHub's list: `approval_requested`, `assign`, `author`, `ci_activity`, `comment`, `invitation`, `manual`, `member_feature_requested`, `mention`, `review_requested`, `security_advisory_credit`, `security_alert`, `state_change`, `subscribed`, `team_mention`). `author`, `comment` and `state_change` (activity on your own threads) are opt-in: noisy, and the open items are covered by the other sources |
+| `due_in_days` | 2 | days after the run's day (`null`: none) |
+| `since` | none | only notifications updated after this `YYYY-MM-DDTHH:MM:SSZ` |
+| `orgs`, `users`, `repos`, `exclude_repos`, `max_items`, `today`, `timezone` | as above | the repository filters apply to the answer (case-insensitive); `max_items` also bounds the pages: `ceil(max_items / 50)` |
+
+Only subjects of type `PullRequest` and `Issue` become tasks; the repository and number come from the subject's API URL, matched strictly (`https://api.github.com/repos/<owner>/<repo>/pulls|issues/<n>`, type and path must agree) and the link is rebuilt as `https://github.com/<owner>/<repo>/pull|issues/<n>`. Anything else (Release, Discussion, CheckSuite, a malformed subject) is counted in `skipped`; a notification with another reason, or outside the repository filters, in `filtered`.
+
+Data adds, per item, `reason`, and per call `poll_interval` (GitHub's `X-Poll-Interval`, seconds between polls; reported, **never slept for**: schedule the pipeline no more often) and `rate_limit_remaining`. Rate limits: the same rules as the other sources (a limited answer fails the call at once with the fixed message, nothing is slept through), and a page answered with `X-RateLimit-Remaining: 0` ends the walk with `truncated: true` instead of asking for the next one. `If-Modified-Since` is not used: the plugin keeps no state between calls (use `since`).
+
+**Token.** The notifications API cannot be read with a fine-grained personal access token or a GitHub App token; it needs a **classic** personal access token with the **`notifications`** scope. That token goes in its own secret, `GITHUB_NOTIFICATIONS_TOKEN`, not in `GITHUB_TOKEN`: it is the least-privilege choice, because the read-only fine-grained search token never has to become a broader classic one, and the classic token is sent only to `GET /notifications`. Give it the `notifications` scope alone (no `repo`; the plugin does not fetch the subjects), and an expiry. Classic tokens cannot be limited to a repository; treat it as sensitive.
+
+**Fingerprints.** The notifications API returns no GraphQL node id, so these items use the fallback `github:pr:<owner>-<repo>:<number>::<digest>` (see below), which is **not** equal to the `github:pr:<node id>` the other sources give: an item that is both in your notifications and in `review_requests`, `assigned` or `mentions` is two tasks today. Pick the sources your pipeline needs accordingly (for example `notifications` with the default reasons, without `review_requests` / `mentions`).
+
 ### One task per item
 
 The fingerprint is the item's identity, not the kind that found it: `github:pr:<node id>` or `github:issue:<node id>`, from GitHub's global node id, which does not change when the item is renamed or edited. When the node id is missing or malformed, it falls back to the repository and number, `github:pr:<owner>-<repo>:<number>::<digest>` (for example `github:pr:acme-org-api:42::f93d83b33a08d274`; the SDK's `intents.fingerprint` replaces `/` and adds a digest of the raw parts). An issue **transferred** to another repository gets a new node id on GitHub, so it becomes a new task; the old one is not closed by the plugin.
@@ -137,7 +157,7 @@ Create a **fine-grained personal access token** (GitHub, Settings, Developer set
 
 Store it as the instance secret `GITHUB_TOKEN` (`/run/secrets/GITHUB_TOKEN` by default). The plugin host injects it only into this plugin. The plugin reads it at each call and sends it only in the `Authorization` header to `api.github.com`; it never appears in data, intents, errors, logs or recordings.
 
-Participating notifications (#3) will need a classic token with the `notifications` scope; this release does not use one.
+`github.notifications` uses a second secret, see below.
 
 ## Permissions
 
@@ -146,8 +166,9 @@ Matches `plugin.yaml` exactly.
 | Kind | Value | Why |
 |---|---|---|
 | intent | `task.create` | one task per item |
-| network | `api.github.com` | the GraphQL API (`POST /graphql`), the only host contacted |
+| network | `api.github.com` | the GraphQL API (`POST /graphql`) and `GET /notifications`, the only host contacted |
 | secret | `GITHUB_TOKEN` | read-only fine-grained token, above |
+| secret | `GITHUB_NOTIFICATIONS_TOKEN` | classic token, `notifications` scope only, for `github.notifications` |
 | paths | none | no filesystem access |
 
 ## How it talks to GitHub
@@ -165,8 +186,8 @@ Each source either returns its data (flagged `truncated` or `partial` when some 
 
 | Message | Cause |
 |---|---|
-| `github: GITHUB_TOKEN is not set` | the secret is missing |
-| `github: authentication failed (GITHUB_TOKEN refused)` | HTTP 401: token wrong, expired or revoked |
+| `github: GITHUB_TOKEN is not set` (`GITHUB_NOTIFICATIONS_TOKEN` for notifications) | the secret is missing |
+| `github: authentication failed (GITHUB_TOKEN refused)` (`GITHUB_NOTIFICATIONS_TOKEN` for notifications) | HTTP 401: token wrong, expired or revoked |
 | `github: access denied (HTTP 403)` | the token lacks a permission or the organisation refuses it |
 | `github: rate limited; retry after N s` | HTTP 403/429 with `Retry-After` (seconds or an HTTP date), or `X-RateLimit-Remaining: 0` with `X-RateLimit-Reset`, or a GraphQL `RATE_LIMITED` error |
 | `github: rate limited; retry later` | HTTP 429, or 403 with `X-RateLimit-Remaining: 0`, without a time to wait |
@@ -174,7 +195,7 @@ Each source either returns its data (flagged `truncated` or `partial` when some 
 | `github: query failed (INTERNAL)` | a GraphQL error other than `FORBIDDEN` / `NOT_FOUND` next to results (those give `partial: true` instead), or any error without results |
 | `github: service unavailable (HTTP 503)` | a gateway error, twice |
 | `github: request timed out`, `github: connection failed (...)`, `github: response too large`, `github: malformed response`, `github: unexpected ...` | network or protocol trouble |
-| `github: invalid org filter`, `github: at most 8 orgs, users and repos values in all (one search each)`, `github: max_items is 1 to 200`, `github: due offsets are 0 to 365 days`, `github: today must be YYYY-MM-DD`, `github: unknown time zone` | a bad pipeline parameter |
+| `github: invalid reasons filter`, `github: since must be YYYY-MM-DDTHH:MM:SSZ`, `github: invalid org filter`, `github: at most 8 orgs, users and repos values in all (one search each)`, `github: max_items is 1 to 200`, `github: due offsets are 0 to 365 days`, `github: today must be YYYY-MM-DD`, `github: unknown time zone` | a bad pipeline parameter |
 
 ## Development
 

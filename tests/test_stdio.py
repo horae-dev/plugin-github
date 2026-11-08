@@ -10,7 +10,12 @@ from mcp.client.stdio import StdioServerParameters
 
 from horae_github import COMMAND, NAME, SECRET
 
-TOOLS = {f"{NAME}.review_requests", f"{NAME}.assigned", f"{NAME}.mentions"}
+TOOLS = {
+    f"{NAME}.review_requests",
+    f"{NAME}.assigned",
+    f"{NAME}.mentions",
+    f"{NAME}.notifications",
+}
 
 
 async def serve_and_call() -> tuple[set[str], str | None]:

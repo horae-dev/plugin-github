@@ -4,7 +4,7 @@
 name: github
 version: 0.2.0
 horae: '>=0,<0.2'
-description: GitHub review requests, assignments and mentions as tasks.
+description: GitHub review requests, assignments, mentions and notifications as tasks.
 license: Apache-2.0
 homepage: https://github.com/horae-dev/plugin-github
 provides:
@@ -12,11 +12,13 @@ provides:
   - github.review_requests
   - github.assigned
   - github.mentions
+  - github.notifications
 permissions:
   network:
   - api.github.com
   secrets:
   - GITHUB_TOKEN
+  - GITHUB_NOTIFICATIONS_TOKEN
   intents:
   - task.create
 runtime:

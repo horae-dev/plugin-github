@@ -1,0 +1,59 @@
+{
+  "tool": "github.notifications",
+  "params": {
+    "today": "2026-10-30",
+    "since": "2026-10-01T00:00:00Z",
+    "reasons": [
+      "mention"
+    ]
+  },
+  "expect": {
+    "data": {
+      "kind": "notifications",
+      "day": "2026-10-30",
+      "items": [
+        {
+          "fingerprint": "github:pr:acme-org-paged:100::3cc3e0d80c414e92",
+          "type": "pr",
+          "repo": "acme-org/paged",
+          "number": 100,
+          "reason": "mention",
+          "title": "Paged 100",
+          "url": "https://github.com/acme-org/paged/pull/100",
+          "due": "2026-11-01"
+        },
+        {
+          "fingerprint": "github:pr:acme-org-paged:101::0d74d57661052f44",
+          "type": "pr",
+          "repo": "acme-org/paged",
+          "number": 101,
+          "reason": "mention",
+          "title": "Paged 101",
+          "url": "https://github.com/acme-org/paged/pull/101",
+          "due": "2026-11-01"
+        }
+      ],
+      "truncated": true,
+      "skipped": 0,
+      "filtered": 0,
+      "poll_interval": 60,
+      "rate_limit_remaining": 4990
+    },
+    "intents": [
+      {
+        "type": "task.create",
+        "title": "Answer mention in acme-org/paged\\#100: Paged 100",
+        "fingerprint": "github:pr:acme-org-paged:100::3cc3e0d80c414e92",
+        "due": "2026-11-01",
+        "link": "https://github.com/acme-org/paged/pull/100"
+      },
+      {
+        "type": "task.create",
+        "title": "Answer mention in acme-org/paged\\#101: Paged 101",
+        "fingerprint": "github:pr:acme-org-paged:101::0d74d57661052f44",
+        "due": "2026-11-01",
+        "link": "https://github.com/acme-org/paged/pull/101"
+      }
+    ]
+  }
+}

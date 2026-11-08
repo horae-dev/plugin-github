@@ -1,0 +1,66 @@
+{
+  "tool": "github.notifications",
+  "params": {
+    "today": "2026-10-30",
+    "reasons": [
+      "mention",
+      "team_mention",
+      "subscribed"
+    ],
+    "orgs": [
+      "acme-org"
+    ],
+    "exclude_repos": [
+      "acme-org/widgets"
+    ]
+  },
+  "expect": {
+    "data": {
+      "kind": "notifications",
+      "day": "2026-10-30",
+      "items": [
+        {
+          "fingerprint": "github:issue:acme-org-api:12::84ad2c707d579b4b",
+          "type": "issue",
+          "repo": "acme-org/api",
+          "number": 12,
+          "reason": "mention",
+          "title": "Crash on empty export txt.exe 📅 2020-01-01 🔁 every day [x](https://evil.example)",
+          "url": "https://github.com/acme-org/api/issues/12",
+          "due": "2026-11-01"
+        },
+        {
+          "fingerprint": "github:issue:acme-org-api:99::ba2d5185cbb7a1de",
+          "type": "issue",
+          "repo": "acme-org/api",
+          "number": 99,
+          "reason": "subscribed",
+          "title": "Watching only",
+          "url": "https://github.com/acme-org/api/issues/99",
+          "due": "2026-11-01"
+        }
+      ],
+      "truncated": false,
+      "skipped": 6,
+      "filtered": 3,
+      "poll_interval": 60,
+      "rate_limit_remaining": 4990
+    },
+    "intents": [
+      {
+        "type": "task.create",
+        "title": "Answer mention in acme-org/api\\#12: Crash on empty export txt.exe &#x1F4C5; 2020-01-01 &#x1F501; every day \\[x\\]\\(https\\://evil.example\\)",
+        "fingerprint": "github:issue:acme-org-api:12::84ad2c707d579b4b",
+        "due": "2026-11-01",
+        "link": "https://github.com/acme-org/api/issues/12"
+      },
+      {
+        "type": "task.create",
+        "title": "Follow up on acme-org/api\\#99: Watching only",
+        "fingerprint": "github:issue:acme-org-api:99::ba2d5185cbb7a1de",
+        "due": "2026-11-01",
+        "link": "https://github.com/acme-org/api/issues/99"
+      }
+    ]
+  }
+}

@@ -21,8 +21,13 @@ default) `github.assigned` also leaves out what `github.review_requests` returns
 `MAX_SEARCHES` per call), and the results are merged, each node once: an item matches when it
 matches any of the values. `exclude_repos` applies to every search.
 
-The token is the declared secret `GITHUB_TOKEN`, read at call time; it never appears in data,
-intents, errors or logs.
+- `github.notifications`: unread notifications you participate in (REST, read only, a classic
+  token in its own secret `GITHUB_NOTIFICATIONS_TOKEN`; see `notifications.py`). The API gives
+  no node id, so its fingerprint is the repository-and-number fallback and does **not** collapse
+  with the node-id fingerprint of the search sources.
+
+The tokens are declared secrets, read at call time; they never appear in data, intents, errors
+or logs.
 """
 
 import os
@@ -38,6 +43,8 @@ from horae_sdk.tasks import is_task_link
 from horae_github import due
 from horae_github.client import Client, GitHubError
 from horae_github.http import HOST, Transport
+from horae_github.notifications import SECRET as NOTIFICATIONS_SECRET
+from horae_github.notifications import NotificationsClient
 
 NAME = "github"
 """The plugin's name, also the namespace of its refs (`github.review_requests`) and
@@ -47,7 +54,9 @@ COMMAND = ["python3", "-m", "horae_github"]
 """`runtime.command` of `plugin.yaml`. When installing, pin an absolute interpreter that has
 this package (the host's `PATH` is fixed and its working directory empty)."""
 SECRET = "GITHUB_TOKEN"  # noqa: S105 (the secret's name, not its value)
-PERMISSIONS = Permissions(intents=["task.create"], network=[HOST], secrets=[SECRET])
+PERMISSIONS = Permissions(
+    intents=["task.create"], network=[HOST], secrets=[SECRET, NOTIFICATIONS_SECRET]
+)
 
 MAX_ITEMS = 200
 MAX_FILTERS = 20
@@ -66,7 +75,44 @@ NODE_ID_RE = re.compile(r"[A-Za-z0-9_=-]{1,100}")
 """All four are used with `fullmatch` only (`$` would accept a trailing line break)."""
 TYPES = {"PullRequest": ("pr", "pull"), "Issue": ("issue", "issues")}
 
+REASONS = frozenset(
+    {
+        "approval_requested",
+        "assign",
+        "author",
+        "ci_activity",
+        "comment",
+        "invitation",
+        "manual",
+        "member_feature_requested",
+        "mention",
+        "review_requested",
+        "security_advisory_credit",
+        "security_alert",
+        "state_change",
+        "subscribed",
+        "team_mention",
+    }
+)
+"""GitHub's documented notification reasons; `participating=true` only returns some of them."""
+DEFAULT_REASONS = ("review_requested", "assign", "mention", "team_mention")
+"""Work waiting for you. `author`, `comment` and `state_change` (activity on your own threads)
+are opt-in: they are noisy and other sources already cover the open items."""
+VERBS = {
+    "review_requested": "Review",
+    "assign": "Work on",
+    "mention": "Answer mention in",
+    "team_mention": "Answer mention in",
+}
+"""Any other reason: `Follow up on`."""
+SUBJECT_URL_RE = re.compile(
+    r"https://api\.github\.com/repos/([^/?#%\\\s]{1,100})/([^/?#%\\\s]{1,100})"
+    r"/(pulls|issues)/([0-9]{1,10})"
+)
+SINCE_RE = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z")
+
 ClientFactory = Callable[[str], Client]
+NotificationsFactory = Callable[[str], NotificationsClient]
 Clock = Callable[[], datetime]
 
 
@@ -106,6 +152,10 @@ MENTIONED = Kind(
 
 def default_client(token: str) -> Client:
     return Client(token, Transport())
+
+
+def default_notifications_client(token: str) -> NotificationsClient:
+    return NotificationsClient(token, Transport())
 
 
 def search_queries(
@@ -214,9 +264,48 @@ def parse(node: object) -> Item | None:
     return item if is_task_link(item.url) else None
 
 
+def parse_notification(thread: object) -> tuple[Item, str] | None:
+    """A notification thread as `(item, reason)`, or `None` when its subject is not a pull
+    request or an issue (Release, Discussion, CheckSuite, ...) or is malformed. The repository
+    and number come from the subject URL, validated; the link is built from them."""
+    if not isinstance(thread, dict):
+        return None
+    subject = thread.get("subject")
+    reason = thread.get("reason")
+    if not isinstance(subject, dict) or not isinstance(reason, str):
+        return None
+    typename = subject.get("type")
+    names = TYPES.get(typename) if isinstance(typename, str) else None
+    url = subject.get("url")
+    found = SUBJECT_URL_RE.fullmatch(url) if isinstance(url, str) else None
+    if names is None or found is None:
+        return None
+    owner, name, segment, number = found.groups()
+    repo = f"{owner}/{name}"
+    if (
+        segment != ("pulls" if names[0] == "pr" else "issues")
+        or not RETURNED_REPO_RE.fullmatch(repo)
+        or any(part in (".", "..") for part in (owner, name))
+        or not 0 < int(number) < 2**31
+    ):
+        return None
+    title = subject.get("title")
+    item = Item(
+        type=names[0],
+        url_part=names[1],
+        node_id=None,
+        repo=repo,
+        number=int(number),
+        title=title if isinstance(title, str) else "",
+        milestone_due=None,
+    )
+    return (item, reason) if is_task_link(item.url) else None
+
+
 def build(
     client: ClientFactory = default_client,
     *,
+    notifications_client: NotificationsFactory = default_notifications_client,
     clock: Clock = due.utc_now,
     environ: Mapping[str, str] = os.environ,
 ) -> Plugin:
@@ -225,7 +314,7 @@ def build(
         NAME,
         version=VERSION,
         permissions=PERMISSIONS,
-        description="GitHub review requests, assignments and mentions as tasks.",
+        description="GitHub review requests, assignments, mentions and notifications as tasks.",
     )
 
     def collect(
@@ -403,6 +492,114 @@ def build(
             today=today,
             timezone=timezone,
             skip_covered=skip_covered,
+        )
+
+    @plugin.source(f"{NAME}.notifications")
+    def notifications(
+        call: Call,
+        reasons: list[str] | None = None,
+        due_in_days: int | None = 2,
+        since: str | None = None,
+        orgs: list[str] | None = None,
+        users: list[str] | None = None,
+        repos: list[str] | None = None,
+        exclude_repos: list[str] | None = None,
+        max_items: int = 50,
+        today: str | None = None,
+        timezone: str | None = None,
+    ) -> Output:
+        """Unread notifications you participate in, for pull requests and issues,
+        limited to `reasons` (default: review_requested, assign, mention, team_mention). Read
+        only: nothing is marked read. Due `due_in_days` days after the run's day."""
+        _offset(due_in_days)
+        if type(max_items) is not int or not 1 <= max_items <= MAX_ITEMS:
+            raise PluginError(f"github: max_items is 1 to {MAX_ITEMS}")
+        wanted: list[object] = list(DEFAULT_REASONS if reasons is None else dict.fromkeys(reasons))
+        if not wanted or not all(isinstance(r, str) and r in REASONS for r in wanted):
+            raise PluginError("github: invalid reasons filter")
+        raw_since: object = since
+        if raw_since is not None and not (
+            isinstance(raw_since, str) and SINCE_RE.fullmatch(raw_since)
+        ):
+            raise PluginError("github: since must be YYYY-MM-DDTHH:MM:SSZ")
+        # the same validation as the searches (the strings are not used): here the values
+        # filter the answer
+        search_queries(
+            ASSIGNED,
+            orgs=orgs or [],
+            users=users or [],
+            repos=repos or [],
+            exclude_repos=exclude_repos or [],
+            skip_covered=False,
+        )
+        owners = {v.lower() for v in [*(orgs or []), *(users or [])]}
+        only_repos = {v.lower() for v in repos or []}
+        excluded = {v.lower() for v in exclude_repos or []}
+        try:
+            day = due.run_day(today, timezone, environ, clock)
+        except due.DueError as error:
+            raise PluginError(str(error)) from None
+        token = environ.get(NOTIFICATIONS_SECRET)
+        if not token:
+            raise PluginError(f"github: {NOTIFICATIONS_SECRET} is not set")
+        try:
+            found = notifications_client(token).participating(max_items=max_items, since=since)
+        except GitHubError as error:
+            raise PluginError(str(error)) from None
+        items: dict[str, tuple[Item, str]] = {}
+        skipped = filtered = 0
+        for thread in found.threads:
+            parsed = parse_notification(thread)
+            if parsed is None:
+                skipped += 1
+                continue
+            item, reason = parsed
+            repo = item.repo.lower()
+            outside = bool(owners or only_repos) and not (
+                repo.split("/")[0] in owners or repo in only_repos
+            )
+            if reason not in wanted or repo in excluded or outside:
+                filtered += 1
+                continue
+            items.setdefault(item.fingerprint, (item, reason))
+        ordered = sorted(items.values(), key=lambda p: (p[0].repo.lower(), p[0].number, p[0].type))
+        data: list[dict[str, Any]] = []
+        tasks_: list[dict[str, Any]] = []
+        when = due.add_days(day, due_in_days)
+        for item, reason in ordered:
+            verb = VERBS.get(reason, "Follow up on")
+            tasks_.append(
+                intents.task_create(
+                    f"{verb} {item.repo}#{item.number}: {item.title}",
+                    key=item.fingerprint,
+                    due=when,
+                    link=item.url,
+                )
+            )
+            data.append(
+                {
+                    "fingerprint": item.fingerprint,
+                    "type": item.type,
+                    "repo": item.repo,
+                    "number": item.number,
+                    "reason": reason,
+                    "title": tasks.plain_text(tasks.escape_title(item.title)),
+                    "url": item.url,
+                    "due": None if when is None else when.isoformat(),
+                }
+            )
+        return Output(
+            {
+                "kind": "notifications",
+                "day": day.isoformat(),
+                "items": data,
+                "truncated": found.truncated,
+                "skipped": skipped,
+                "filtered": filtered,
+                "poll_interval": found.poll_interval,
+                "rate_limit_remaining": found.rate_limit_remaining,
+            },
+            intents=tasks_,
         )
 
     return plugin

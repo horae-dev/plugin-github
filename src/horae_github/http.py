@@ -141,7 +141,7 @@ def _shut(sock: socket.socket) -> None:
 
 
 class Transport:
-    """POST requests to one host, bounded. `connect` is replaceable for tests only (a plain
+    """POST and GET requests to one host, bounded. `connect` is replaceable for tests only (a plain
     connection to a fake server on 127.0.0.1); the plugin always uses `https_connection`."""
 
     def __init__(
@@ -166,9 +166,39 @@ class Transport:
         *,
         deadline: float | None = None,
     ) -> Response:
-        """One request, finished before `deadline` (on `clock`; default: `CALL_DEADLINE_S`
+        """One POST, finished before `deadline` (on `clock`; default: `CALL_DEADLINE_S`
         from now) or `DeadlineExceeded`."""
-        end = self.clock() + CALL_DEADLINE_S if deadline is None else deadline
+        return self.request("POST", path, body, headers, deadline=deadline)
+
+    def get(
+        self, path: str, headers: Mapping[str, str], *, deadline: float | None = None
+    ) -> Response:
+        """One GET (the notifications source only ever reads), bounded like `post`."""
+        return self.request("GET", path, None, headers, deadline=deadline)
+
+    def request(
+        self,
+        method: str,
+        path: str,
+        body: bytes | None,
+        headers: Mapping[str, str],
+        *,
+        deadline: float | None = None,
+    ) -> Response:
+        end = self._end(deadline)
+        return self._send(method, path, body, headers, end)
+
+    def _end(self, deadline: float | None) -> float:
+        return self.clock() + CALL_DEADLINE_S if deadline is None else deadline
+
+    def _send(
+        self,
+        method: str,
+        path: str,
+        body: bytes | None,
+        headers: Mapping[str, str],
+        end: float,
+    ) -> Response:
         expired = threading.Event()
 
         def left() -> float:
@@ -195,7 +225,7 @@ class Transport:
             watchdog.daemon = True
             watchdog.start()
             try:
-                return self._exchange(connection, sock, path, body, headers, left)
+                return self._exchange(connection, sock, method, path, body, headers, left)
             except (OSError, http.client.HTTPException) as error:
                 raise failed(error) from None
             finally:
@@ -212,13 +242,14 @@ class Transport:
         self,
         connection: http.client.HTTPConnection,
         sock: socket.socket,
+        method: str,
         path: str,
-        body: bytes,
+        body: bytes | None,
         headers: Mapping[str, str],
         left: Callable[[], float],
     ) -> Response:
         sock.settimeout(left())
-        connection.request("POST", path, body=body, headers=dict(headers))
+        connection.request(method, path, body=body, headers=dict(headers))
         sock.settimeout(left())
         answer = connection.getresponse()
         length = digits(answer.getheader("content-length"))

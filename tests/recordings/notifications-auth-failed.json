@@ -1,0 +1,10 @@
+{
+  "tool": "github.notifications",
+  "params": {
+    "today": "2026-10-30",
+    "since": "2026-07-01T00:00:00Z"
+  },
+  "expect": {
+    "error": "github: authentication failed (GITHUB_NOTIFICATIONS_TOKEN refused)"
+  }
+}
