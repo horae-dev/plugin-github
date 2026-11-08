@@ -183,14 +183,15 @@ def test_bad_parameters(plugin: Plugin, params: dict[str, Any], message: str) ->
 
 def test_secret_is_separate_and_required(notifications: FakeNotifications) -> None:
     plugin = build(environ={"GITHUB_TOKEN": TOKEN})
-    assert run(plugin).error == "github: GITHUB_NOTIFICATIONS_TOKEN is not set"
+    assert run(plugin).error == "secret_missing: GITHUB_NOTIFICATIONS_TOKEN is not set"
     assert notifications.paths == []
 
 
 def test_declared_secrets() -> None:
     from horae_github.plugin import PERMISSIONS
 
-    assert sorted(PERMISSIONS.secrets) == ["GITHUB_NOTIFICATIONS_TOKEN", "GITHUB_TOKEN"]
+    assert list(PERMISSIONS.secrets) == ["GITHUB_TOKEN"]
+    assert list(PERMISSIONS.optional_secrets) == ["GITHUB_NOTIFICATIONS_TOKEN"]
 
 
 class Scripted:

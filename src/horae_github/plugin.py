@@ -55,7 +55,10 @@ COMMAND = ["python3", "-m", "horae_github"]
 this package (the host's `PATH` is fixed and its working directory empty)."""
 SECRET = "GITHUB_TOKEN"  # noqa: S105 (the secret's name, not its value)
 PERMISSIONS = Permissions(
-    intents=["task.create"], network=[HOST], secrets=[SECRET, NOTIFICATIONS_SECRET]
+    intents=["task.create"],
+    network=[HOST],
+    secrets=[SECRET],
+    optional_secrets=[NOTIFICATIONS_SECRET],
 )
 
 MAX_ITEMS = 200
@@ -541,7 +544,7 @@ def build(
             raise PluginError(str(error)) from None
         token = environ.get(NOTIFICATIONS_SECRET)
         if not token:
-            raise PluginError(f"github: {NOTIFICATIONS_SECRET} is not set")
+            raise PluginError(f"secret_missing: {NOTIFICATIONS_SECRET} is not set")
         try:
             found = notifications_client(token).participating(max_items=max_items, since=since)
         except GitHubError as error:
