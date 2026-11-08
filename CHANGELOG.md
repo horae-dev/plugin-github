@@ -3,11 +3,13 @@
 ## 0.2.0 (unreleased)
 
 - Every task carries a link to its item (#2): the `task.create` intent now has `link`, the
-  item's `https://github.com/<owner>/<repo>/pull|issues/<number>` URL (built from the validated
-  repository and number, never copied from the answer; also still in the data as `url`).
-  Requires horae-sdk 0.2.0 and the core's decision 52. **Upgrading:** a pipeline that routes
-  these tasks to a `mode: tasks` entry must set `link_prefix` (for example
-  `https://github.com/<org>/`), or the step fails with `intent_unrouted`.
+  item's `https://github.com/<owner>/<repo>/pull|issues/<number>` URL (built from GitHub's
+  repository name and the integer number, host fixed to github.com, never from its `url`
+  field; also still in the data as `url`). An item whose link the SDK refuses (format, bidi or
+  surrogate characters, `.`/`..` segments) is skipped and counted in `skipped`.
+  Requires horae-sdk 0.2.0 and a core with decision 52 (horae main >= 0f5531a). **Upgrading:** a pipeline that routes
+  these tasks to a `mode: tasks` entry must set `link_prefix` per owner (for example
+  `https://github.com/<Owner>/`, canonical case, non-overlapping), or the step fails with `intent_unrouted`.
 
 ## 0.1.0 (unreleased)
 

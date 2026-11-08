@@ -33,6 +33,7 @@ from datetime import date, datetime
 from typing import Any
 
 from horae_sdk import Call, Output, Permissions, Plugin, PluginError, intents, tasks
+from horae_sdk.tasks import is_task_link
 
 from horae_github import due
 from horae_github.client import Client, GitHubError
@@ -170,7 +171,8 @@ class Item:
 
     @property
     def url(self) -> str:
-        """Built from the validated repository and number, never taken from the answer."""
+        """Built from GitHub's repository name and the integer number, host fixed to github.com,
+        never from its `url` field."""
         return f"https://github.com/{self.repo}/{self.url_part}/{self.number}"
 
 
@@ -194,7 +196,9 @@ def parse(node: object) -> Item | None:
     node_id = node.get("id")
     title = node.get("title")
     milestone = node.get("milestone")
-    return Item(
+    if any(segment in (".", "..") for segment in repo.split("/")):
+        return None
+    item = Item(
         type=names[0],
         url_part=names[1],
         node_id=node_id if isinstance(node_id, str) and NODE_ID_RE.fullmatch(node_id) else None,
@@ -205,6 +209,9 @@ def parse(node: object) -> Item | None:
         if isinstance(milestone, dict)
         else None,
     )
+    # The link must be one the SDK (and the core) accepts: no format, bidi or surrogate
+    # characters; an item that fails is skipped, never raised on.
+    return item if is_task_link(item.url) else None
 
 
 def build(
@@ -270,7 +277,8 @@ def build(
         tasks_: list[dict[str, Any]] = []
         for item in ordered:
             when = due_for(item, day)
-            # `item.url` is built from the validated repository and number, never copied.
+            # `item.url` is built from GitHub's repository name and the integer number, host fixed
+            # to github.com, never from its `url` field.
             task = intents.task_create(
                 f"{kind.verb} {item.repo}#{item.number}: {item.title}",
                 key=item.fingerprint,
@@ -411,7 +419,7 @@ def manifest() -> dict[str, Any]:
     """The `plugin.yaml` document of this plugin (`python -m horae_github --manifest`)."""
     return build().manifest(
         command=COMMAND,
-        horae=">=0.1,<0.2",
+        horae=">=0,<0.2",
         license="Apache-2.0",
         homepage="https://github.com/horae-dev/plugin-github",
     )
