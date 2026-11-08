@@ -183,7 +183,7 @@ def test_bad_parameters(plugin: Plugin, params: dict[str, Any], message: str) ->
 
 def test_secret_is_separate_and_required(notifications: FakeNotifications) -> None:
     plugin = build(environ={"GITHUB_TOKEN": TOKEN})
-    assert run(plugin).error == "github: GITHUB_NOTIFICATIONS_TOKEN is not set"
+    assert run(plugin).error == "secret_missing: GITHUB_NOTIFICATIONS_TOKEN is not set"
     assert notifications.paths == []
 
 

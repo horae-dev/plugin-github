@@ -2,6 +2,11 @@
 
 ## 0.2.0 (unreleased)
 
+- **Optional secrets** (core decision 56): `GITHUB_NOTIFICATIONS_TOKEN` moves to
+  `permissions.optional_secrets`, so no placeholder token is needed when `github.notifications`
+  is unused; without it that source fails with `secret_missing: GITHUB_NOTIFICATIONS_TOKEN is
+  not set`. `GITHUB_TOKEN` stays required. **Requires a core with decision 56** (unreleased
+  0.0.x); the `horae:` range stays `>=0,<0.2`.
 - New source `github.notifications` (#3): unread participating notifications
   (`GET /notifications?participating=true`, GET only, read state never modified) for pull
   requests and issues as `task.create` intents; `reasons` filter, `since`, `X-Poll-Interval`

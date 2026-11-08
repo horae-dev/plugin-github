@@ -180,7 +180,7 @@ Matches `plugin.yaml` exactly.
 | `github.mentions` | `GITHUB_TOKEN` | fine-grained PAT | same | `POST /graphql` (search) |
 | `github.notifications` | `GITHUB_NOTIFICATIONS_TOKEN` | classic PAT | `notifications` only | `GET /notifications` (never marks anything read) |
 
-**Both secrets must exist, even if you never run `github.notifications`.** The core starts a plugin only when every secret it declares resolves (it has no optional secrets yet: horae-dev/horae#123). If you don't use notifications, still create a classic token with the `notifications` scope alone. It reads only notification metadata, and the plugin never calls the notifications API unless a pipeline uses `github.notifications`.
+**`GITHUB_NOTIFICATIONS_TOKEN` is optional.** Declared in `permissions.optional_secrets`, it is injected only when it resolves, so you create the classic `notifications` token only if you use `github.notifications`; without it that source fails with `secret_missing: GITHUB_NOTIFICATIONS_TOKEN is not set`. The search sources always need `GITHUB_TOKEN`. Optional secrets need a core with decision 56 (unreleased 0.0.x); the manifest's `horae:` range stays `>=0,<0.2`, but an older core rejects `optional_secrets`.
 
 ## How it talks to GitHub
 

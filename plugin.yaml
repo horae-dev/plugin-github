@@ -18,6 +18,7 @@ permissions:
   - api.github.com
   secrets:
   - GITHUB_TOKEN
+  optional_secrets:
   - GITHUB_NOTIFICATIONS_TOKEN
   intents:
   - task.create
