@@ -141,7 +141,7 @@ Titles reach a task only through the SDK's `intents.task_create`, which escapes 
 ## Install and configure
 
 ```
-horae plugin add github@0.1.0
+horae plugin add github@0.2.0
 ```
 
 Pin `runtime.command` to an absolute interpreter that has this package (the host's `PATH` is fixed and its working directory is empty), for example `/opt/plugins/github/.venv/bin/python -m horae_github`.
@@ -170,6 +170,17 @@ Matches `plugin.yaml` exactly.
 | secret | `GITHUB_TOKEN` | read-only fine-grained token, above |
 | secret | `GITHUB_NOTIFICATIONS_TOKEN` | classic token, `notifications` scope only, for `github.notifications` |
 | paths | none | no filesystem access |
+
+### Which token each source uses
+
+| Source | Secret | Token type | Scopes / permissions | Requests |
+|---|---|---|---|---|
+| `github.review_requests` | `GITHUB_TOKEN` | fine-grained PAT | `Pull requests: Read`, `Issues: Read`, `Metadata: Read` | `POST /graphql` (search) |
+| `github.assigned` | `GITHUB_TOKEN` | fine-grained PAT | same | `POST /graphql` (search) |
+| `github.mentions` | `GITHUB_TOKEN` | fine-grained PAT | same | `POST /graphql` (search) |
+| `github.notifications` | `GITHUB_NOTIFICATIONS_TOKEN` | classic PAT | `notifications` only | `GET /notifications` (never marks anything read) |
+
+**Both secrets must exist, even if you never run `github.notifications`.** The core starts a plugin only when every secret it declares resolves (it has no optional secrets yet: horae-dev/horae#123). If you don't use notifications, still create a classic token with the `notifications` scope alone. It reads only notification metadata, and the plugin never calls the notifications API unless a pipeline uses `github.notifications`.
 
 ## How it talks to GitHub
 
