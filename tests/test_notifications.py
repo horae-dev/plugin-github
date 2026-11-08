@@ -190,7 +190,8 @@ def test_secret_is_separate_and_required(notifications: FakeNotifications) -> No
 def test_declared_secrets() -> None:
     from horae_github.plugin import PERMISSIONS
 
-    assert sorted(PERMISSIONS.secrets) == ["GITHUB_NOTIFICATIONS_TOKEN", "GITHUB_TOKEN"]
+    assert list(PERMISSIONS.secrets) == ["GITHUB_TOKEN"]
+    assert list(PERMISSIONS.optional_secrets) == ["GITHUB_NOTIFICATIONS_TOKEN"]
 
 
 class Scripted:
