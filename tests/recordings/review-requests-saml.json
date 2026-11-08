@@ -31,7 +31,8 @@
         "type": "task.create",
         "title": "Review acme-org/saml\\#51: Bump the SSO client",
         "fingerprint": "github:pr:PR_kwDOSYNTH0051",
-        "due": "2026-11-02"
+        "due": "2026-11-02",
+        "link": "https://github.com/acme-org/saml/pull/51"
       }
     ]
   }

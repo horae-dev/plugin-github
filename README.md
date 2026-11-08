@@ -25,6 +25,22 @@ steps:
       - github.mentions: { today: "{{date}}", due_in_days: 3 }
 ```
 
+### Routing the tasks: `link_prefix`
+
+The core routes a task that has a link only to a `mode: tasks` entry whose trusted `link_prefix` covers it; without one the step fails with `intent_unrouted`. Set it to the GitHub owners of the items you collect:
+
+```yaml
+steps:
+  - collect:
+      - github.review_requests: { today: "{{date}}", orgs: [acme-org] }
+  - act:
+      - tasks:
+          mode: tasks
+          link_prefix: https://github.com/acme-org/
+```
+
+The prefix needs at least one path segment (`https://github.com/acme-org/`, not `https://github.com/`). The host is compared case-insensitively, `:443` and a trailing dot are ignored, and the path is case-sensitive: `https://github.com/Acme-Org/` does not cover `https://github.com/acme-org/api/pull/1`. Collecting from several owners needs an entry (and prefix) for each.
+
 ### Parameters
 
 All three take:
@@ -80,7 +96,7 @@ Per source:
 }
 ```
 
-- **Links.** The `task.create` intent has no link field yet (its schema allows only `title`, `fingerprint`, `due` and `time`), and a URL in the title is escaped so it is not a link. The item's link is therefore in the data, `url`, for the pipeline's later steps. It is built from the repository and number (`https://github.com/<owner>/<repo>/pull|issues/<number>`), never copied from the answer. The core follow-up [horae#122](https://github.com/horae-dev/horae/issues/122) adds a link to `task.create`; the plugin will then pass it on the task as well.
+- **Links.** Every task carries the item's link (`task.create`'s `link`, horae-sdk 0.2.0, schemas decision 52), and the data keeps it as `url`. A URL in the title is escaped so it is never a link; the link is a field of its own. It is built from the repository and number (`https://github.com/<owner>/<repo>/pull|issues/<number>`), never copied from the answer.
 - `items` are sorted by repository and number. `truncated` is true when more than `max_items` matched, or when the call's 25 s deadline ran out after at least one page (the items already fetched are returned). `skipped` counts answers that were not a well-formed issue or pull request (a node that is not an object, an unknown type, a bad number, a repository that cannot be one). A repository returned by GitHub is kept when it is `owner/name` with no whitespace, control character, second `/` or `?#%\`; GitHub's naming rules are not reapplied to its own answers.
 - `partial` is true when GitHub returned results **and** `FORBIDDEN` or `NOT_FOUND` errors (typically an organisation enforcing SAML single sign-on on the token, whose items are hidden): the visible items are returned and `errors` counts the errors. Their text is not kept. Any other GraphQL error fails the call.
 - `title` is GitHub's title with control, bidi and zero-width characters removed. It is still **untrusted text** (anyone who can open a pull request chooses it): treat it as data.

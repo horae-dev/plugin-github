@@ -4,11 +4,13 @@ parameter checks and the token's handling."""
 
 import json
 import logging
+import re
 from typing import Any
 
 import anyio
 import pytest
 from horae_sdk import Plugin
+from horae_sdk.tasks import is_task_link
 from horae_sdk.testing import Replayed
 from horae_sdk.testing import call as call_tool
 
@@ -349,3 +351,26 @@ def test_a_past_milestone_is_a_past_due_date() -> None:
 def test_draft_pull_requests_are_included(plugin: Plugin) -> None:
     replayed = run(plugin, "github.assigned", today="2026-10-30")
     assert any(i["title"].startswith("Draft") for i in replayed.data["items"])
+
+
+@pytest.mark.parametrize(
+    ("tool", "params"),
+    [
+        ("github.review_requests", {}),
+        ("github.assigned", {"orgs": ["acme-org"]}),
+        ("github.mentions", {}),
+    ],
+)
+def test_every_task_carries_its_github_link(
+    plugin: Plugin, tool: str, params: dict[str, Any]
+) -> None:
+    replayed = run(plugin, tool, today="2026-10-30", **params)
+    assert replayed.intents
+    assert replayed.data is not None
+    urls = {i["fingerprint"]: i["url"] for i in replayed.data["items"]}
+    for intent in replayed.intents:
+        link = intent["link"]
+        assert link == urls[intent["fingerprint"]]
+        assert is_task_link(link)
+        assert re.fullmatch(r"https://github\.com/[^/]+/[^/]+/(pull|issues)/\d+", link)
+        assert link.startswith("https://github.com/acme-org/")

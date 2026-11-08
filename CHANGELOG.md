@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.2.0 (unreleased)
+
+- Every task carries a link to its item (#2): the `task.create` intent now has `link`, the
+  item's `https://github.com/<owner>/<repo>/pull|issues/<number>` URL (built from the validated
+  repository and number, never copied from the answer; also still in the data as `url`).
+  Requires horae-sdk 0.2.0 and the core's decision 52. **Upgrading:** a pipeline that routes
+  these tasks to a `mode: tasks` entry must set `link_prefix` (for example
+  `https://github.com/<org>/`), or the step fails with `intent_unrouted`.
+
 ## 0.1.0 (unreleased)
 
 - New sources `github.review_requests`, `github.assigned` and `github.mentions` (#2): open

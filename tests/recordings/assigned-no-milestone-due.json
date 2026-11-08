@@ -46,17 +46,20 @@
       {
         "type": "task.create",
         "title": "Work on acme-org/api\\#11: Document the export format",
-        "fingerprint": "github:issue:I_kwDOSYNTH0011"
+        "fingerprint": "github:issue:I_kwDOSYNTH0011",
+        "link": "https://github.com/acme-org/api/issues/11"
       },
       {
         "type": "task.create",
         "title": "Work on acme-org/api\\#12: Draft: retry on 502",
-        "fingerprint": "github:pr:PR_kwDOSYNTH0012"
+        "fingerprint": "github:pr:PR_kwDOSYNTH0012",
+        "link": "https://github.com/acme-org/api/pull/12"
       },
       {
         "type": "task.create",
         "title": "Work on acme-org/widgets\\#42: Add the widget cache",
-        "fingerprint": "github:pr:PR_kwDOSYNTH0042"
+        "fingerprint": "github:pr:PR_kwDOSYNTH0042",
+        "link": "https://github.com/acme-org/widgets/pull/42"
       }
     ]
   }

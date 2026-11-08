@@ -31,7 +31,8 @@
         "type": "task.create",
         "title": "Review acme-org/hostile\\#666: &#x1F4C5; 2020-01-01 &#x1F501; every day &#x23EB; \\*\\*urgent\\*\\* \\[\\[Secrets\\]\\] \\!\\[\\[x\\]\\] \\<img src\\=x onerror\\=alert\\(1\\)\\> \\`code\\` \\%&#x25;hidden\\%&#x25; \\=&#x3D;mark\\=&#x3D; \\#tag https\\://evil.example/phish www\\.evil.example TXT.EXE zerowidth line2 line3 \\$x\\$ \\^block",
         "fingerprint": "github:pr:PR_kwDOSYNTH0666",
-        "due": "2026-11-02"
+        "due": "2026-11-02",
+        "link": "https://github.com/acme-org/hostile/pull/666"
       }
     ]
   }

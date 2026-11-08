@@ -1,13 +1,13 @@
 [project]
 name = "horae-plugin-github"
-version = "0.1.0"
+version = "0.2.0"
 description = "Horae plugin: GitHub review requests, assignments and mentions as tasks."
 readme = "README.md"
 license = "Apache-2.0"
 license-files = ["LICENSE"]
 requires-python = ">=3.12"
 dependencies = [
-    "horae-sdk>=0.1,<0.2",
+    "horae-sdk>=0.2,<0.3",
 ]
 
 [build-system]
