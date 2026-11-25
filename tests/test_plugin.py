@@ -16,7 +16,7 @@ from horae_sdk.testing import call as call_tool
 from conftest import NOW, TOKEN, WALL, FakeTransport, load_fixtures
 from horae_github import build
 from horae_github.client import Client
-from horae_github.plugin import ASSIGNED, MENTIONED, REVIEW, Kind, parse, search_queries
+from horae_github.plugin import ASSIGNED, CI, MENTIONED, REVIEW, Kind, parse, search_queries
 
 
 def run(plugin: Plugin, tool: str, **params: Any) -> Replayed:
@@ -41,11 +41,16 @@ def test_search_strings() -> None:
         "is:open is:pr archived:false user-review-requested:@me"
     ]
     assert queries(ASSIGNED, skip_covered=True) == [
-        "is:open archived:false assignee:@me -review-requested:@me"
+        "is:issue is:open archived:false assignee:@me -review-requested:@me",
+        "is:pr is:open archived:false assignee:@me -review-requested:@me",
     ]
-    assert queries(ASSIGNED) == ["is:open archived:false assignee:@me"]
+    assert queries(ASSIGNED) == [
+        "is:issue is:open archived:false assignee:@me",
+        "is:pr is:open archived:false assignee:@me",
+    ]
     assert queries(MENTIONED, skip_covered=True) == [
-        "is:open archived:false mentions:@me -assignee:@me -review-requested:@me"
+        "is:issue is:open archived:false mentions:@me -assignee:@me -review-requested:@me",
+        "is:pr is:open archived:false mentions:@me -assignee:@me -review-requested:@me",
     ]
     # draft pull requests are not left out: no `draft:` qualifier
     assert not any("draft" in q for kind in (REVIEW, ASSIGNED, MENTIONED) for q in queries(kind))
@@ -268,11 +273,16 @@ class ByQuery:
 
         q = json.loads(body)["variables"]["q"]
         self.queries.append(q)
+        # a kind without `is:issue` / `is:pr` is searched once per type: the pages answer the
+        # `is:issue` search, the `is:pr` one finds nothing
+        head, _, rest = q.partition(" ")
+        if q not in self.pages and head in ("is:issue", "is:pr"):
+            q = rest if head == "is:issue" else ""
         document: dict[str, Any] = {
             "data": {
                 "search": {
                     "pageInfo": {"hasNextPage": False, "endCursor": None},
-                    "nodes": self.pages[q],
+                    "nodes": self.pages[q] if q else [],
                 }
             }
         }
@@ -316,7 +326,7 @@ def test_a_mixed_filter_is_any_of_its_values() -> None:
         repos=["other-org/api"],
         exclude_repos=["acme-org/legacy"],
     )
-    assert len(transport.queries) == 3
+    assert len(transport.queries) == 6  # each value: an `is:issue` and an `is:pr` search
     assert [(i["repo"], i["number"]) for i in replayed.data["items"]] == [
         ("acme-org/api", 1),
         ("acme-org/web", 2),
@@ -443,3 +453,14 @@ def test_unsafe_repositories_are_skipped_and_counted_not_raised() -> None:
     assert [i["link"] for i in replayed.intents] == ["https://github.com/Acme-Org/api/issues/9"]
     assert replayed.data is not None
     assert replayed.data["skipped"] == len(bad)
+
+
+@pytest.mark.parametrize("kind", [REVIEW, ASSIGNED, MENTIONED, CI])
+@pytest.mark.parametrize("filters", [{}, {"orgs": ["a"], "users": ["b"], "repos": ["c/d"]}])
+def test_every_search_names_its_type(kind: Kind, filters: dict[str, Any]) -> None:
+    """GitHub answers a fine-grained token's search with neither `is:issue` nor `is:pr` with
+    nothing, silently (REST: 422)."""
+    found = queries(kind, **filters)
+    assert found
+    assert all({"is:issue", "is:pr"} & set(q.split()) for q in found)
+    assert len(found) == len(set(found))

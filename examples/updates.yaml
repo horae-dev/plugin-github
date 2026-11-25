@@ -1,4 +1,4 @@
-# pipelines/github-updates.yaml: a to-do of what is new for you on GitHub (plugin-github 0.5.0).
+# pipelines/github-updates.yaml: a to-do of what is new for you on GitHub (plugin-github 0.5.1).
 #
 # Every 30 minutes on weekdays, 08:00 to 20:30 (the instance time zone). No LLM step.
 # - collect: `github.updates` lists the open issues and pull requests of the owners (and, with
@@ -50,10 +50,10 @@ steps:
           topic: CHANGE-ME
           tags: [bell]
           link_prefix: "https://github.com/Acme-Org/"
-          dedupe: off            # keyed pushes: the core deduplicates, no ntfy state needed
+          dedupe: "off"            # keyed pushes: the core deduplicates, no ntfy state needed
       - ntfy.push:
           server: https://ntfy.invalid
           topic: CHANGE-ME
           tags: [bell]
           link_prefix: "https://github.com/ada/"
-          dedupe: off
+          dedupe: "off"

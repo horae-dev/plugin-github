@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.5.1
+
+- Fix: `github.assigned`, `github.mentions` and `github.updates` found nothing with a
+  fine-grained token. GitHub's search (GraphQL `search(type: ISSUE)`, and REST, which answers
+  422) returns no result, silently, when the query has neither `is:issue` nor `is:pr`; an OAuth
+  or classic token still got results, so the live checks missed it. Each of those sources now
+  searches every `orgs` / `users` / `repos` value (and `involves:@me`) twice, `is:issue` and
+  `is:pr`, merged by node id. `github.review_requests` and the pull request search of
+  `github.ci_failures` already had `is:pr` and are unchanged.
+- Search bounds: up to 16 searches per call (8 values, each twice) instead of 8, 18 instead of 9
+  for `github.updates`; still one 25 s call deadline (`truncated` when it runs out), and
+  `max_items` / `truncated` apply to the merged result.
+- Docs and examples: `dedupe: "off"` quoted (a bare `off` is the boolean `false` in YAML 1.1,
+  and `ntfy.push` rejects it).
+
 ## 0.5.0
 
 - New source `github.updates`: a to-do of the issues and pull requests where someone else did

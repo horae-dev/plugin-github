@@ -33,9 +33,12 @@ def test_one_search_per_owner_then_involves_me(plugin: Plugin, transport: FakeTr
     assert result.error is None
     assert transport.requests[0]["query"] == updates.VIEWER_QUERY
     assert searches(transport) == [
-        "is:open archived:false sort:updated-desc updated:>=2026-10-16 org:acme-up",
-        "is:open archived:false sort:updated-desc updated:>=2026-10-16 org:acme-up",
-        "involves:@me is:open archived:false sort:updated-desc updated:>=2026-10-16",
+        "is:issue is:open archived:false sort:updated-desc updated:>=2026-10-16 org:acme-up",
+        "is:issue is:open archived:false sort:updated-desc updated:>=2026-10-16 org:acme-up",
+        "is:pr is:open archived:false sort:updated-desc updated:>=2026-10-16 org:acme-up",
+        "is:pr is:open archived:false sort:updated-desc updated:>=2026-10-16 org:acme-up",
+        "is:issue involves:@me is:open archived:false sort:updated-desc updated:>=2026-10-16",
+        "is:pr involves:@me is:open archived:false sort:updated-desc updated:>=2026-10-16",
     ]
     # the involves:@me search found an item the owner search had: kept once
     numbers = [(i["repo"], i["number"]) for i in result.data["items"]]
@@ -84,15 +87,22 @@ def test_filters_and_options_reach_every_search() -> None:
     assert result.error is None
     head = "archived:false sort:updated-desc updated:>=2026-10-30"
     assert queries == [
-        f"{head} user:acme-user -repo:acme-org/old",
-        f"{head} repo:acme-org/api -repo:acme-org/old",
-        f"involves:@me {head} -repo:acme-org/old",
+        f"{t} {mine}{head}{scope} -repo:acme-org/old"
+        for mine, scope in (
+            ("", " user:acme-user"),
+            ("", " repo:acme-org/api"),
+            ("involves:@me ", ""),
+        )
+        for t in ("is:issue", "is:pr")
     ]
 
 
 def test_involves_me_off_reads_only_the_owners() -> None:
     _result, queries = recorded(orgs=["acme-org"], involves_me=False)
-    assert queries == ["is:open archived:false sort:updated-desc updated:>=2026-10-16 org:acme-org"]
+    assert queries == [
+        f"{t} is:open archived:false sort:updated-desc updated:>=2026-10-16 org:acme-org"
+        for t in ("is:issue", "is:pr")
+    ]
 
 
 @pytest.mark.parametrize("value", [-1, 91, None])

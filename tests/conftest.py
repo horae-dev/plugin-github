@@ -40,6 +40,9 @@ class FakeTransport:
         request = json.loads(body)
         self.requests.append(request)
         variables = request["variables"]
+        if "q" in variables:
+            # GitHub returns nothing, silently, for a fine-grained token without a type
+            assert {"is:issue", "is:pr"} & set(variables["q"].split()), variables["q"]
         for fixture in self.fixtures:
             if "query" in fixture:  # a request without variables, chosen by its document
                 if fixture["query"] not in request["query"]:
