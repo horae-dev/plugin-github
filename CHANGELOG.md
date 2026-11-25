@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.5.0
+
+- New source `github.updates`: a to-do of the issues and pull requests where someone else did
+  something after your last action on them. One search per `orgs` / `users` / `repos` value,
+  plus `involves:@me` anywhere (`involves_me`, default), `updated:>=` the window
+  (`since_days`, default 14), open only unless `include_closed`; each item's last 25 timeline
+  events decide: your last action (comment, submitted review, force push, close, merge, reopen,
+  review request, or opening it; never a commit, whose date and author the committer chooses)
+  against the latest event by someone else; times past the day after the run's day are clamped, and a commit's date to the item's `updatedAt`. Bots (type `Bot`, `[bot]` logins,
+  commits whose author is no GitHub account) are left out unless `include_bots`; a review
+  request counts only when it asks you. No plugin state. Data: repository, number, type,
+  sanitised title, `event` (closed set), `by`, `at`, `your_last_action`, link rebuilt from
+  validated parts, fingerprints. Parameters `orgs`, `users`, `repos`, `exclude_repos`,
+  `involves_me`, `since_days`, `include_closed`, `include_bots`, `notify`, `max_items`,
+  `today`, `timezone`.
+- With `notify: true`, one `notify.push` per item keyed on the item and its latest event
+  (the existing `notify.push` permission, no new one): the core pushes each event once.
+- `GITHUB_TOKEN`, for this source: `Metadata`, `Issues`, `Pull requests` and `Contents`
+  read-only (README, "The token"). No new permission, host or secret.
+- Example pipeline `examples/updates.yaml`.
+
 ## 0.4.0
 
 - New source `github.ci_failures`: which repositories have a failing CI. For each `orgs` /

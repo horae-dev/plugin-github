@@ -1,0 +1,55 @@
+{
+  "tool": "github.updates",
+  "params": {
+    "repos": [
+      "acme-up/closed"
+    ],
+    "involves_me": false,
+    "include_closed": true,
+    "today": "2026-10-30"
+  },
+  "expect": {
+    "data": {
+      "kind": "updates",
+      "day": "2026-10-30",
+      "since": "2026-10-16",
+      "items": [
+        {
+          "fingerprint": "github:update:PR_c1:E_21",
+          "item_fingerprint": "github:pr:PR_c1",
+          "type": "pr",
+          "repo": "acme-up/closed",
+          "number": 1,
+          "item_title": "Ship it",
+          "event": "merged",
+          "by": "ivan",
+          "at": "2026-10-27T10:00:00Z",
+          "your_last_action": "2026-10-18T10:00:00Z",
+          "url": "https://github.com/acme-up/closed/pull/1",
+          "title": "Ship it — ivan merged"
+        },
+        {
+          "fingerprint": "github:update:I_c2:E_25",
+          "item_fingerprint": "github:issue:I_c2",
+          "type": "issue",
+          "repo": "acme-up/closed",
+          "number": 2,
+          "item_title": "Flaky test",
+          "event": "reopened",
+          "by": "carol",
+          "at": "2026-10-23T10:00:00Z",
+          "your_last_action": "2026-10-20T10:00:00Z",
+          "url": "https://github.com/acme-up/closed/issues/2",
+          "title": "Flaky test — carol reopened"
+        }
+      ],
+      "checked": 2,
+      "truncated": false,
+      "filtered": 0,
+      "skipped": 0,
+      "partial": false,
+      "errors": 0
+    },
+    "intents": []
+  }
+}

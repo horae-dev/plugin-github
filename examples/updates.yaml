@@ -1,0 +1,59 @@
+# pipelines/github-updates.yaml: a to-do of what is new for you on GitHub (plugin-github 0.5.0).
+#
+# Every 30 minutes on weekdays, 08:00 to 20:30 (the instance time zone). No LLM step.
+# - collect: `github.updates` lists the open issues and pull requests of the owners (and, with
+#   `involves_me`, any that involve you) where someone else commented, reviewed, pushed, merged,
+#   closed, reopened, asked your review or opened something after your last action on them, in
+#   the last 14 days; bots are left out. Answer, review or push and the item drops out.
+#   With `notify: true`, one push per item, keyed on the item and its latest event: the core
+#   sends each key once, so newer activity on the same item is pushed again, the same one never.
+# - transform: plugin-obsidian's `obsidian.render_note` lays the items out as a note.
+# - act: the note's owned block is replaced on every run (an empty list reads `_None._`).
+# - notify: plugin-ntfy pushes; one entry per owner, because a push with a link is routed only
+#   to an entry whose `link_prefix` covers it (owners in their canonical case, as in github.com
+#   URLs; the prefixes must not overlap). An `involves_me` item of another owner is covered by
+#   no entry: the core skips its push (`intent_skipped`), the note still lists it.
+#   `Acme-Org` and `ada` are placeholders.
+#
+# `ntfy.invalid` and `CHANGE-ME` are placeholders that fail: use your server and topic.
+name: github-updates
+trigger: { cron: "*/30 8-20 * * 1-5" }
+steps:
+  - collect:
+      - github.updates:
+          orgs: [Acme-Org]
+          users: [ada]
+          today: "{{date}}"
+          notify: true
+  - transform:
+      - obsidian.render_note:
+          today: "{{date}}"
+          block: github-updates
+          expect: [github.updates]
+          template: |
+            # GitHub: new for you
+
+            Updated ${date}.
+
+            ## Alerts
+
+            ${alerts}
+
+            ## New since your last action
+
+            ${github}
+  - act:
+      - obsidian.write_note: { path: "Horae/GitHub.assistant.md", mode: replace-owned }
+  - notify:
+      - ntfy.push:
+          server: https://ntfy.invalid
+          topic: CHANGE-ME
+          tags: [bell]
+          link_prefix: "https://github.com/Acme-Org/"
+          dedupe: off            # keyed pushes: the core deduplicates, no ntfy state needed
+      - ntfy.push:
+          server: https://ntfy.invalid
+          topic: CHANGE-ME
+          tags: [bell]
+          link_prefix: "https://github.com/ada/"
+          dedupe: off

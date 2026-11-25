@@ -1,0 +1,25 @@
+{
+  "tool": "github.updates",
+  "params": {
+    "orgs": [
+      "acme-empty"
+    ],
+    "involves_me": false,
+    "today": "2026-10-30"
+  },
+  "expect": {
+    "data": {
+      "kind": "updates",
+      "day": "2026-10-30",
+      "since": "2026-10-16",
+      "items": [],
+      "checked": 0,
+      "truncated": false,
+      "filtered": 0,
+      "skipped": 0,
+      "partial": false,
+      "errors": 0
+    },
+    "intents": []
+  }
+}

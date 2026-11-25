@@ -2,8 +2,9 @@
 """Shared fixtures: a fake GitHub answering from synthetic data (never real accounts).
 
 `FakeTransport` stands where the HTTPS connection to api.github.com would be: it answers each
-GraphQL request from `tests/fixtures/graphql.json` and `tests/fixtures/ci.json`, chosen by the
-request's variables (the search string and page cursor, or the owner or repository), so the
+GraphQL request from `tests/fixtures/graphql.json`, `ci.json` and `updates.json`, chosen by the
+request's variables (the search string and page cursor, or the owner or repository) or, for
+a request without variables, by its document (`viewer { login }`), so the
 client's parsing, pagination and error handling all run."""
 
 import json
@@ -40,6 +41,12 @@ class FakeTransport:
         self.requests.append(request)
         variables = request["variables"]
         for fixture in self.fixtures:
+            if "query" in fixture:  # a request without variables, chosen by its document
+                if fixture["query"] not in request["query"]:
+                    continue
+                return Response(
+                    fixture["status"], fixture["headers"], json.dumps(fixture["body"]).encode()
+                )
             wanted = fixture.get("vars") or {"q": fixture["q"], "after": fixture["after"]}
             if all(key in variables and variables[key] == v for key, v in wanted.items()):
                 return Response(
@@ -77,7 +84,7 @@ class FakeNotifications:
 
 def load_fixtures() -> list[dict[str, Any]]:
     fixtures: list[dict[str, Any]] = []
-    for name in ("graphql.json", "ci.json"):
+    for name in ("graphql.json", "ci.json", "updates.json"):
         fixtures += json.loads((HERE / "fixtures" / name).read_text("utf-8"))
     return fixtures
 

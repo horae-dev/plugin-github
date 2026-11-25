@@ -1,0 +1,9 @@
+{
+  "tool": "github.updates",
+  "params": {
+    "today": "2026-10-30"
+  },
+  "expect": {
+    "error": "github: updates needs orgs, users or repos"
+  }
+}
