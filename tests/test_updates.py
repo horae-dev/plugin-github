@@ -28,6 +28,14 @@ def searches(transport: FakeTransport) -> list[str]:
     return [r["variables"]["q"] for r in transport.requests if "q" in r["variables"]]
 
 
+def pages(transport: FakeTransport) -> list[tuple[str, str | None]]:
+    return [
+        (r["variables"]["q"], r["variables"]["after"])
+        for r in transport.requests
+        if "q" in r["variables"]
+    ]
+
+
 def test_one_search_per_owner_then_involves_me(plugin: Plugin, transport: FakeTransport) -> None:
     result = run(plugin, orgs=["acme-up"])
     assert result.error is None
@@ -40,6 +48,11 @@ def test_one_search_per_owner_then_involves_me(plugin: Plugin, transport: FakeTr
         "is:issue involves:@me is:open archived:false sort:updated-desc updated:>=2026-10-16",
         "is:pr involves:@me is:open archived:false sort:updated-desc updated:>=2026-10-16",
     ]
+    # an owner's search is asked twice per type on purpose: the fixture's first page has a
+    # next one, so the repeat is page 2 (a cursor), not the same page again
+    owner = [p for p in pages(transport) if p[0].endswith("org:acme-up")]
+    assert [after for _q, after in owner] == [None, "dXA6MQ", None, "dXA6MQ"]
+    assert len({p for p in pages(transport)}) == len(pages(transport))
     # the involves:@me search found an item the owner search had: kept once
     numbers = [(i["repo"], i["number"]) for i in result.data["items"]]
     assert len(numbers) == len(set(numbers))
@@ -133,6 +146,7 @@ def issue(author: str | None, timeline: list[Any], day: int = 17) -> dict[str, A
         "number": 1,
         "title": "An issue",
         "createdAt": f"2026-10-{day:02d}T09:00:00Z",
+        "updatedAt": "2026-10-30T10:00:00Z",
         "author": actor(author),
         "repository": {"nameWithOwner": "acme-org/api"},
         "issueTimeline": {"nodes": timeline},
@@ -163,6 +177,20 @@ def test_your_login_is_compared_without_case() -> None:
 
 def test_the_same_second_is_not_new() -> None:
     assert verdict(issue("bob", [comment(1, "bob", 20), comment(2, ME, 20)])) == "old"
+
+
+def test_a_later_event_in_the_same_second_as_your_reply_is_new() -> None:
+    """GitHub's times have a resolution of one second: the timeline order breaks the tie."""
+    found = verdict(issue("bob", [comment(1, ME, 20), comment(2, "bob", 20)]))
+    assert isinstance(found, updates.Update)
+    assert (found.last.login, found.since) == ("bob", "2026-10-20T10:00:00Z")
+
+
+def test_an_earlier_event_in_the_same_second_as_your_reply_is_old() -> None:
+    assert verdict(issue("bob", [comment(1, "bob", 20), comment(2, ME, 20)])) == "old"
+    # the opening of someone else's item is before your first reply, even in the same second
+    node = {**issue("bob", [comment(1, ME, 17)]), "createdAt": "2026-10-17T10:00:00Z"}
+    assert verdict(node) == "old"
 
 
 def test_your_own_item_without_answers_is_not_new() -> None:
@@ -387,6 +415,28 @@ def test_a_forged_commit_in_your_name_does_not_hide_a_newer_comment() -> None:
     assert found.since is None
 
 
+def test_a_commit_of_an_item_without_updated_at_is_ignored() -> None:
+    """Fail closed: a commit's date is the committer's claim, bounded only by `updatedAt`."""
+    commit = {
+        "__typename": "PullRequestCommit",
+        "id": "PRC_1",
+        "commit": {"committedDate": "2099-01-01T00:00:00Z", "author": {"user": {"login": "bob"}}},
+    }
+    node = {
+        **issue(ME, [comment(1, "bob", 21)]),
+        "__typename": "PullRequest",
+        "prTimeline": {"nodes": [comment(1, "bob", 21), commit]},
+    }
+    del node["updatedAt"]
+    found = updates.update(node, ME, "2026-10-16", False)
+    assert isinstance(found, updates.Update)
+    assert found.last.kind == "commented"  # not the 2099 push
+    node["updatedAt"] = "2026-10-30T10:00:00Z"
+    found = updates.update(node, ME, "2026-10-16", False)
+    assert isinstance(found, updates.Update)
+    assert found.last.kind == "pushed"
+
+
 def test_your_real_actions_still_count_next_to_your_commits() -> None:
     node = {
         **issue(ME, []),
@@ -404,7 +454,12 @@ def test_a_future_time_is_clamped_to_the_end_of_the_run_day() -> None:
         "id": "PRC_future",
         "commit": {"committedDate": "2099-01-01T00:00:00Z", "author": {"user": {"login": "bob"}}},
     }
-    node = {**issue(ME, []), "__typename": "PullRequest", "prTimeline": {"nodes": [future]}}
+    node = {
+        **issue(ME, []),
+        "__typename": "PullRequest",
+        "updatedAt": "2099-01-01T00:00:00Z",  # past the clamp: only the run's day bounds it
+        "prTimeline": {"nodes": [future]},
+    }
     found = updates.update(node, ME, "2026-10-16", False, "2026-10-30T23:59:59Z")
     assert isinstance(found, updates.Update)
     assert found.last.at == "2026-10-30T23:59:59Z"
@@ -472,3 +527,20 @@ def test_events_after_utc_midnight_are_not_clamped_west_of_utc() -> None:
         day=date(2026, 10, 30),
     )
     assert [u.last.at for u in found.updates] == ["2026-10-31T00:40:00Z"]
+
+
+def test_notify_max_bounds_the_pushes_newest_first(plugin: Plugin) -> None:
+    everything = run(plugin, orgs=["acme-up"], notify=True)
+    total = len(everything.data["items"])
+    assert total > 2
+    assert len(everything.intents) == total
+    capped = run(plugin, orgs=["acme-up"], notify=True, notify_max=2)
+    assert len(capped.data["items"]) == total
+    assert [i["key"] for i in capped.intents] == [
+        i["fingerprint"] for i in capped.data["items"][:2]
+    ]
+    assert capped.data["notify_skipped"] == total - 2
+    assert run(plugin, orgs=["acme-up"], notify_max=2).data["notify_skipped"] == 0
+    bad = run(plugin, orgs=["acme-up"], notify_max=0)
+    assert bad.error is not None
+    assert "notify_max is 1 to 100" in bad.error

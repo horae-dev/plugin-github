@@ -1,6 +1,6 @@
 [
   {
-    "query": "viewer { login }",
+    "query": "updates.VIEWER_QUERY",
     "status": 200,
     "headers": {},
     "body": {

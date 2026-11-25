@@ -417,7 +417,7 @@ wheels = [
 
 [[package]]
 name = "horae-plugin-github"
-version = "0.5.3"
+version = "0.5.4"
 source = { editable = "." }
 dependencies = [
     { name = "horae-sdk" },

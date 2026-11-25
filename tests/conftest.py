@@ -4,7 +4,7 @@
 `FakeTransport` stands where the HTTPS connection to api.github.com would be: it answers each
 GraphQL request from `tests/fixtures/graphql.json`, `ci.json` and `updates.json`, chosen by the
 request's variables (the search string and page cursor, or the owner or repository) or, for
-a request without variables, by its document (`viewer { login }`), so the
+a request without variables, by its document (`updates.VIEWER_QUERY`, compared exactly), so the
 client's parsing, pagination and error handling all run."""
 
 import json
@@ -16,7 +16,7 @@ from typing import Any
 import pytest
 from horae_sdk import Plugin
 
-from horae_github import build
+from horae_github import build, updates
 from horae_github.client import Client
 from horae_github.http import Response
 from horae_github.notifications import NotificationsClient
@@ -25,6 +25,10 @@ HERE = Path(__file__).parent
 TOKEN = "synthetic-test-token-0123456789"  # noqa: S105 (not a real token)
 NOW = datetime(2026, 10, 30, 21, 30, tzinfo=UTC)  # Friday evening UTC, Saturday in Tokyo
 WALL = 1793350500.0  # X-RateLimit-Reset in the fixtures is 300 s later
+
+
+DOCUMENTS = {"updates.VIEWER_QUERY": updates.VIEWER_QUERY}
+"""Fixtures with a `query` name a document of the plugin, matched exactly."""
 
 
 class FakeTransport:
@@ -45,7 +49,7 @@ class FakeTransport:
             assert {"is:issue", "is:pr"} & set(variables["q"].split()), variables["q"]
         for fixture in self.fixtures:
             if "query" in fixture:  # a request without variables, chosen by its document
-                if fixture["query"] not in request["query"]:
+                if DOCUMENTS[fixture["query"]] != request["query"]:
                     continue
                 return Response(
                     fixture["status"], fixture["headers"], json.dumps(fixture["body"]).encode()

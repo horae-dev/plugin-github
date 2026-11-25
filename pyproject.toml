@@ -1,6 +1,6 @@
 [project]
 name = "horae-plugin-github"
-version = "0.5.3"
+version = "0.5.4"
 description = "Horae plugin: GitHub review requests, assignments and mentions as tasks."
 readme = "README.md"
 license = "Apache-2.0"

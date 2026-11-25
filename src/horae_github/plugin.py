@@ -63,7 +63,7 @@ from horae_github.notifications import NotificationsClient
 NAME = "github"
 """The plugin's name, also the namespace of its refs (`github.review_requests`) and
 fingerprints (`github:pr:<node id>`)."""
-VERSION = "0.5.3"
+VERSION = "0.5.4"
 COMMAND = ["python3", "-m", "horae_github"]
 """`runtime.command` of `plugin.yaml`. When installing, pin an absolute interpreter that has
 this package (the host's `PATH` is fixed and its working directory empty)."""
