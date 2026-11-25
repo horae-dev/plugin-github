@@ -454,7 +454,7 @@ def test_events_after_utc_midnight_are_not_clamped_west_of_utc() -> None:
     mine = {**comment(1, ME, 31), "createdAt": "2026-10-31T00:30:00Z"}
     theirs = {**comment(2, "bob", 31), "createdAt": "2026-10-31T00:40:00Z"}
     found = updates.collect(
-        Client(TOKEN, OneItem(issue("bob", [mine, theirs]))),
+        Client(TOKEN, OneItem(issue("bob", [mine, theirs]))),  # type: ignore[arg-type]
         ["q"],
         excluded=frozenset(),
         cutoff=date(2026, 10, 16),
