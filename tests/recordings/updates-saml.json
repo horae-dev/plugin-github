@@ -40,7 +40,8 @@
           "reason": "saml",
           "count": 1
         }
-      ]
+      ],
+      "notify_skipped": 0
     },
     "intents": []
   }

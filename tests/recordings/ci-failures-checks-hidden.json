@@ -24,7 +24,7 @@
           "checks_hidden": true,
           "since": "2026-10-29",
           "url": "https://github.com/acme-checks/private-app/commit/d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1",
-          "title": "main: checks hidden from this token failing since 2026-10-29 (d1d1d1d)"
+          "title": "main: checks hidden from this token failing, head commit of 2026-10-29 (d1d1d1d)"
         }
       ],
       "checked": 1,
@@ -33,7 +33,8 @@
       "skipped": 0,
       "partial": false,
       "errors": 0,
-      "hidden": []
+      "hidden": [],
+      "notify_skipped": 0
     },
     "intents": []
   }

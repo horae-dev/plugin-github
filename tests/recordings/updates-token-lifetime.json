@@ -25,7 +25,8 @@
           "reason": "token_lifetime",
           "count": 4
         }
-      ]
+      ],
+      "notify_skipped": 0
     },
     "intents": []
   }

@@ -27,7 +27,7 @@
           "checks_hidden": false,
           "since": "2026-10-29",
           "url": "https://github.com/acme-forks/upstream-fork/commit/4e41585bb4644658a7675698d1778c956e5da63b",
-          "title": "main: build failing since 2026-10-29 (4e41585)"
+          "title": "main: build failing, head commit of 2026-10-29 (4e41585)"
         }
       ],
       "checked": 1,
@@ -36,7 +36,8 @@
       "skipped": 0,
       "partial": false,
       "errors": 0,
-      "hidden": []
+      "hidden": [],
+      "notify_skipped": 0
     },
     "intents": []
   }

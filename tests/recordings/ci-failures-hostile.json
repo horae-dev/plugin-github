@@ -31,7 +31,7 @@
           "checks_hidden": false,
           "since": "2026-10-29",
           "url": "https://github.com/acme-hostile/app/commit/cdcacaa025d39cc27d138e025a9222865834f819",
-          "title": "main<script>📅 2020-01-01: - [ ] task ⏳ 2026-01-01 / Build 📅 2020-01-01 🔁 every day [[Secret]] […, dotdot, job page, other repo, query failing since 2026-10-29 (cdcacaa)"
+          "title": "main<script>📅 2020-01-01: - [ ] task ⏳ 2026-01-01 / Build 📅 2020-01-01 🔁 every day [[Secret]] […, dotdot, job page, other repo, query failing, head commit of 2026-10-29 (cdcacaa)"
         }
       ],
       "checked": 3,
@@ -40,12 +40,13 @@
       "skipped": 5,
       "partial": false,
       "errors": 0,
-      "hidden": []
+      "hidden": [],
+      "notify_skipped": 0
     },
     "intents": [
       {
         "type": "notify.push",
-        "body": "- [ ] task ⏳ 2026-01-01 / Build 📅 2020-01-01 🔁 every day [[Secret]] […, dotdot, job page, other repo, query failed on cdcacaa (2026-10-29).",
+        "body": "- [ ] task ⏳ 2026-01-01 / Build 📅 2020-01-01 🔁 every day [[Secret]] […, dotdot, job page, other repo, query failed on cdcacaa (head commit of 2026-10-29).",
         "title": "CI failing: acme-hostile/app main<script>📅 2020-01-01",
         "link": "https://github.com/acme-hostile/app/commit/cdcacaa025d39cc27d138e025a9222865834f819",
         "key": "github:ci:acme-hostile-app:branch-main-script---2020-01-01:cdcacaa025d39cc27d138e025a9222865834f819::8e48bdc393268d04"
