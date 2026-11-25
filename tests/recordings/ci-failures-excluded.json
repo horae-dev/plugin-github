@@ -25,6 +25,7 @@
           ],
           "more_checks": 0,
           "unread_checks": 0,
+          "checks_hidden": false,
           "since": "2026-10-19",
           "url": "https://github.com/acme-org/docs/commit/1eb974a68bff655ca4a96d8278301e0e1e125494",
           "title": "trunk: ci/external failing since 2026-10-19 (1eb974a)"
@@ -35,7 +36,8 @@
       "filtered": 7,
       "skipped": 0,
       "partial": false,
-      "errors": 0
+      "errors": 0,
+      "hidden": []
     },
     "intents": []
   }

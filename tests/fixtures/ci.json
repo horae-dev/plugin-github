@@ -782,7 +782,7 @@
                 "isFork": false,
                 "pushedAt": "2026-10-29T09:00:00Z",
                 "defaultBranchRef": {
-                  "name": "main​<script>📅 2020-01-01",
+                  "name": "main\u200b<script>\ud83d\udcc5 2020-01-01",
                   "target": {
                     "oid": "cdcacaa025d39cc27d138e025a9222865834f819",
                     "committedDate": "2026-10-29T08:00:00Z",
@@ -793,13 +793,13 @@
                         "nodes": [
                           {
                             "__typename": "CheckRun",
-                            "name": "Build 📅 2020-01-01 🔁 every day [[Secret]] [x](https://evil.example.org) #tag ‮\u0007",
+                            "name": "Build \ud83d\udcc5 2020-01-01 \ud83d\udd01 every day [[Secret]] [x](https://evil.example.org) #tag \u202e\u0007",
                             "conclusion": "FAILURE",
                             "checkSuite": {
                               "workflowRun": {
                                 "url": "https://evil.example.org/acme-hostile/app/actions/runs/1",
                                 "workflow": {
-                                  "name": "- [ ] task ⏳ 2026-01-01"
+                                  "name": "- [ ] task \u23f3 2026-01-01"
                                 }
                               }
                             }
@@ -940,7 +940,7 @@
                 "pushedAt": "yesterday"
               },
               {
-                "nameWithOwner": "acme-hostile/bidi‮ppa",
+                "nameWithOwner": "acme-hostile/bidi\u202eppa",
                 "isArchived": false,
                 "isFork": false,
                 "pushedAt": "2026-10-29T09:00:00Z",
@@ -1246,6 +1246,201 @@
           }
         }
       }
+    }
+  },
+  {
+    "vars": {
+      "login": "acme-checks",
+      "after": null,
+      "isFork": false
+    },
+    "status": 200,
+    "headers": {},
+    "body": {
+      "data": {
+        "repositoryOwner": {
+          "repositories": {
+            "pageInfo": {
+              "hasNextPage": false,
+              "endCursor": null
+            },
+            "nodes": [
+              {
+                "nameWithOwner": "acme-checks/private-app",
+                "isArchived": false,
+                "isFork": false,
+                "pushedAt": "2026-10-29T09:00:00Z",
+                "defaultBranchRef": {
+                  "name": "main",
+                  "target": {
+                    "oid": "d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1",
+                    "committedDate": "2026-10-29T08:00:00Z",
+                    "statusCheckRollup": {
+                      "state": "FAILURE",
+                      "contexts": {
+                        "totalCount": 2,
+                        "nodes": [
+                          null,
+                          null
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "errors": [
+        {
+          "type": "FORBIDDEN",
+          "path": [
+            "repositoryOwner",
+            "repositories",
+            "nodes",
+            0,
+            "defaultBranchRef",
+            "target",
+            "statusCheckRollup",
+            "contexts",
+            "nodes",
+            0
+          ],
+          "locations": [
+            {
+              "line": 1,
+              "column": 1
+            }
+          ],
+          "message": "Resource not accessible by personal access token"
+        },
+        {
+          "type": "FORBIDDEN",
+          "path": [
+            "repositoryOwner",
+            "repositories",
+            "nodes",
+            0,
+            "defaultBranchRef",
+            "target",
+            "statusCheckRollup",
+            "contexts",
+            "nodes",
+            1
+          ],
+          "locations": [
+            {
+              "line": 1,
+              "column": 1
+            }
+          ],
+          "message": "Resource not accessible by personal access token"
+        }
+      ]
+    }
+  },
+  {
+    "vars": {
+      "login": "acme-missing",
+      "after": null,
+      "isFork": false
+    },
+    "status": 200,
+    "headers": {},
+    "body": {
+      "data": {
+        "repositoryOwner": {
+          "repositories": {
+            "pageInfo": {
+              "hasNextPage": false,
+              "endCursor": null
+            },
+            "nodes": [
+              {
+                "nameWithOwner": "acme-missing/ok",
+                "isArchived": false,
+                "isFork": false,
+                "pushedAt": "2026-10-29T09:00:00Z",
+                "defaultBranchRef": {
+                  "name": "main",
+                  "target": {
+                    "oid": "d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1",
+                    "committedDate": "2026-10-29T08:00:00Z",
+                    "statusCheckRollup": {
+                      "state": "FAILURE",
+                      "contexts": {
+                        "totalCount": 1,
+                        "nodes": [
+                          null
+                        ]
+                      }
+                    }
+                  }
+                }
+              },
+              null
+            ]
+          }
+        }
+      },
+      "errors": [
+        {
+          "type": "FORBIDDEN",
+          "path": [
+            "repositoryOwner",
+            "repositories",
+            "nodes",
+            0,
+            "defaultBranchRef",
+            "target",
+            "statusCheckRollup",
+            "contexts",
+            "nodes",
+            0
+          ],
+          "locations": [
+            {
+              "line": 1,
+              "column": 1
+            }
+          ],
+          "message": "Resource not accessible by personal access token"
+        },
+        {
+          "type": "FORBIDDEN",
+          "path": [
+            "repositoryOwner",
+            "repositories",
+            "nodes",
+            1
+          ],
+          "message": "Resource not accessible by personal access token"
+        }
+      ]
+    }
+  },
+  {
+    "vars": {
+      "login": "acme-lifetime",
+      "after": null,
+      "isFork": false
+    },
+    "status": 200,
+    "headers": {},
+    "body": {
+      "data": {
+        "repositoryOwner": null
+      },
+      "errors": [
+        {
+          "type": "FORBIDDEN",
+          "path": [
+            "repositoryOwner"
+          ],
+          "message": "The 'acme-lifetime' organization forbids access via a fine-grained personal access tokens if the token's lifetime is greater than 366 days. Please adjust your token's lifetime at the following URL: https://github.com/settings/personal-access-tokens/1234"
+        }
+      ]
     }
   }
 ]

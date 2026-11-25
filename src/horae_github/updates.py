@@ -51,7 +51,7 @@ from horae_sdk import PluginError, intents
 from horae_sdk.tasks import is_task_link
 
 from horae_github.ci import _repo_name, text
-from horae_github.client import MIN_PAGE_S, Client, GitHubError, _OutOfTime
+from horae_github.client import LOGIN_RE, MIN_PAGE_S, Client, GitHubError, Hidden, _OutOfTime, merge
 
 NAME = "github"
 MAX_ITEMS = 100
@@ -61,7 +61,6 @@ MAX_SEARCH_RESULTS = 100
 TIMELINE_ITEMS = 25
 MAX_TITLE = 150
 MAX_LOGIN = 60
-LOGIN_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9_-]{0,38}")
 NODE_ID_RE = re.compile(r"[A-Za-z0-9_=-]{1,100}")
 TIMESTAMP_RE = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z")
 TYPES = {"PullRequest": ("pr", "pull"), "Issue": ("issue", "issues")}
@@ -232,6 +231,7 @@ class Found:
     skipped: int = 0
     truncated: bool = False
     errors: int = 0
+    hidden: tuple[Hidden, ...] = ()
 
 
 def _stamp(value: object) -> str | None:
@@ -420,6 +420,7 @@ def collect(
     nodes: list[Any] = []
     seen: set[str] = set()
     out = Found()
+    hidden: list[Hidden] = []
     for query in queries:
         if client.time_left(deadline) < MIN_PAGE_S:
             out.truncated = True
@@ -429,6 +430,7 @@ def collect(
         )
         out.truncated = out.truncated or found.truncated
         out.errors += found.errors
+        hidden += found.hidden
         for node in found.nodes:
             node_id = node.get("id") if isinstance(node, dict) else None
             if isinstance(node_id, str):
@@ -449,6 +451,7 @@ def collect(
             out.filtered += 1
             continue
         out.updates.append(result)
+    out.hidden = merge(hidden)
     out.updates.sort(key=lambda u: (u.last.at, u.repo.lower(), u.number), reverse=True)
     return out
 

@@ -282,7 +282,7 @@ def test_a_long_push_title_fits() -> None:
     push = found.push()
     assert len(push["title"]) <= tasks.MAX_TITLE
     assert push["title"].endswith("…)")
-    assert push["body"].startswith("checks failed")
+    assert push["body"].startswith("Checks failed")
 
 
 def test_the_same_failing_commit_keeps_its_fingerprint_a_new_one_does_not() -> None:

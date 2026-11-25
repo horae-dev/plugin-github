@@ -40,7 +40,8 @@
       "truncated": false,
       "skipped": 3,
       "partial": false,
-      "errors": 0
+      "errors": 0,
+      "hidden": []
     },
     "intents": [
       {

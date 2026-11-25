@@ -53,6 +53,20 @@ PARTIAL_ERROR_TYPES = frozenset({"FORBIDDEN", "NOT_FOUND"})
 """GraphQL errors that hide some results (an organisation enforcing SAML on the token, a
 repository the token cannot see) while `data` still holds the visible ones."""
 SECONDARY_LIMIT = b"secondary rate limit"
+LOGIN_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9_-]{0,38}")
+SCOPE_RE = re.compile(r"(?:^|\s)(?:org|user|repo):([A-Za-z0-9][A-Za-z0-9_-]{0,38})(?=/|\s|$)")
+"""The first `org:`, `user:` or `repo:` qualifier of a search (a `-repo:` exclusion does not
+match: its `-` is not a space); group 1 is the owner."""
+REASONS = (
+    "token_lifetime",
+    "token_not_allowed",
+    "saml",
+    "ip_allow_list",
+    "not_accessible",
+    "forbidden",
+)
+"""The closed set of reasons a `FORBIDDEN` error is reduced to; GitHub's text is never kept."""
+MAX_MESSAGE = 2000
 RETURNED_REPO_RE = re.compile(r"[^\s/?#%\\\x00-\x1f\x7f]{1,100}/[^\s/?#%\\\x00-\x1f\x7f]{1,100}")
 """A repository GitHub returned: kept unless it could not be one (whitespace, control
 characters, a second `/`, or `?#%\\` that would change the link built from it); GitHub's own
@@ -94,6 +108,98 @@ class _OutOfTime(GitHubError):
 
 
 @dataclass(frozen=True)
+class Hidden:
+    """`count` results GitHub hid for one reason (from `REASONS`), under one owner."""
+
+    owner: str | None
+    """A login that passed `LOGIN_RE`, taken from the query scope we sent (never from
+    GitHub's text); `None` when unknown (an `involves:@me` search)."""
+    reason: str
+    count: int
+
+    def data(self) -> dict[str, Any]:
+        return {"owner": self.owner, "reason": self.reason, "count": self.count}
+
+
+@dataclass(frozen=True)
+class Hiding:
+    """What one GraphQL request hid: `count` errors (results missing), `hidden` those of
+    `FORBIDDEN` by owner and reason (a `NOT_FOUND` is counted but has no reason)."""
+
+    count: int = 0
+    hidden: tuple[Hidden, ...] = ()
+
+
+def merge(*groups: Sequence[Hidden]) -> tuple[Hidden, ...]:
+    """The groups summed per (owner, reason), sorted by owner (unknown first) then reason."""
+    totals: dict[tuple[str | None, str], int] = {}
+    for group in groups:
+        for item in group:
+            key = (item.owner, item.reason)
+            totals[key] = totals.get(key, 0) + item.count
+    return tuple(
+        Hidden(owner, reason, count)
+        for (owner, reason), count in sorted(totals.items(), key=lambda t: (t[0][0] or "", t[0][1]))
+    )
+
+
+def classify(error: Any) -> str:
+    """The reason of one `FORBIDDEN` error: a member of `REASONS`, chosen by matching the
+    message shapes GitHub is known to use and its `extensions` flags. The text itself is
+    only compared, never returned."""
+    extensions = error.get("extensions") if isinstance(error, dict) else None
+    if isinstance(extensions, dict):
+        if extensions.get("saml_failure") is True:
+            return "saml"
+        if extensions.get("ip_allow_list_failure") is True:
+            return "ip_allow_list"
+    message = error.get("message") if isinstance(error, dict) else None
+    low = message[:MAX_MESSAGE].lower() if isinstance(message, str) else ""
+    if "saml" in low:
+        return "saml"
+    if "ip allow list" in low:
+        return "ip_allow_list"
+    if "forbids access via a fine-grained personal access token" in low:
+        return "token_lifetime" if "lifetime" in low else "token_not_allowed"
+    if "forbids access via" in low and "personal access token" in low:
+        return "token_not_allowed"
+    if "has not approved" in low or "not been approved" in low:
+        return "token_not_allowed"
+    if "resource not accessible by personal access token" in low:
+        return "not_accessible"
+    return "forbidden"
+
+
+def query_owner(text: str) -> str | None:
+    """The owner a search string is scoped to (`org:`, `user:` or `repo:`), `None` without
+    one (`involves:@me`)."""
+    found = SCOPE_RE.search(text)
+    return found.group(1) if found else None
+
+
+def _check_context(data: Any, error: Any) -> bool:
+    """A `FORBIDDEN` error on a check run or status of a commit whose rollup `state` was
+    read: the checks are hidden, no result is missing."""
+    path = error.get("path") if isinstance(error, dict) else None
+    if not isinstance(path, list) or error.get("type") != "FORBIDDEN":
+        return False
+    if "statusCheckRollup" not in path:
+        return False
+    at = path.index("statusCheckRollup")
+    if path[at + 1 : at + 2] != ["contexts"]:
+        return False
+    node = data
+    for key in path[: at + 1]:
+        if isinstance(key, str) and isinstance(node, dict):
+            node = node.get(key)
+        elif type(key) is int and isinstance(node, list) and 0 <= key < len(node):
+            node = node[key]
+        else:
+            return False
+    return isinstance(node, dict) and isinstance(node.get("state"), str)
+
+
+@dataclass(frozen=True)
 class Search:
     nodes: list[Any]
     """GitHub's nodes, as returned (not checked), one per node id."""
@@ -101,6 +207,8 @@ class Search:
     """More results exist past `max_items`, or the deadline cut the search short."""
     errors: int = 0
     """GraphQL `FORBIDDEN` / `NOT_FOUND` errors that came with data: results are missing."""
+    hidden: tuple[Hidden, ...] = ()
+    """The `FORBIDDEN` ones, by owner and reason."""
 
 
 @dataclass(frozen=True)
@@ -109,6 +217,7 @@ class _Page:
     has_next: bool
     cursor: str | None
     errors: int
+    hidden: tuple[Hidden, ...] = ()
 
 
 class Client:
@@ -161,6 +270,7 @@ class Client:
         nodes: list[Any] = []
         seen: set[str] = set()
         errors = 0
+        hidden: list[Hidden] = []
         pages = 1 if started else 0
         truncated = False
 
@@ -177,17 +287,18 @@ class Client:
             fetched = 0
             while True:
                 if pages and deadline - self._clock() < MIN_PAGE_S:
-                    return Search(nodes[:max_items], True, errors)
+                    return Search(nodes[:max_items], True, errors, merge(hidden))
                 try:
                     page = self._page(
                         query, text, min(PAGE_SIZE, max_items - fetched), after, deadline
                     )
                 except _OutOfTime:
                     if pages:
-                        return Search(nodes[:max_items], True, errors)
+                        return Search(nodes[:max_items], True, errors, merge(hidden))
                     raise GitHubError("github: request timed out") from None
                 pages += 1
                 errors += page.errors
+                hidden += page.hidden
                 fetched += len(page.nodes)
                 for node in page.nodes:
                     keep(node)
@@ -198,12 +309,12 @@ class Client:
                     break
                 after = page.cursor
         if len(nodes) > max_items:
-            return Search(nodes[:max_items], True, errors)
-        return Search(nodes, truncated, errors)
+            return Search(nodes[:max_items], True, errors, merge(hidden))
+        return Search(nodes, truncated, errors, merge(hidden))
 
     def _page(self, query: str, text: str, first: int, after: str | None, deadline: float) -> _Page:
         variables = {"q": text, "first": first, "after": after}
-        search, partial = self.graphql(query, variables, "search", deadline)
+        search, hiding = self.graphql(query, variables, "search", deadline, owner=query_owner(text))
         page_info = _get(search, "pageInfo")
         nodes = _get(search, "nodes")
         if not isinstance(nodes, list) or not isinstance(page_info, dict):
@@ -213,7 +324,8 @@ class Client:
             nodes,
             page_info.get("hasNextPage") is True,
             cursor if isinstance(cursor, str) else None,
-            partial,
+            hiding.count,
+            hiding.hidden,
         )
 
     def graphql(
@@ -224,9 +336,14 @@ class Client:
         deadline: float,
         *,
         allow_missing: bool = False,
-    ) -> tuple[Any, int]:
-        """`data.<root>` of one GraphQL request, and how many `FORBIDDEN` / `NOT_FOUND` errors
-        came with it (results hidden, the rest kept). A `RATE_LIMITED` error, any other error,
+        owner: str | None = None,
+    ) -> tuple[Any, Hiding]:
+        """`data.<root>` of one GraphQL request, and what came hidden with it: how many
+        `FORBIDDEN` / `NOT_FOUND` errors (results hidden, the rest kept), the `FORBIDDEN` ones
+        by reason under `owner` (the owner the request was scoped to, if it was; checked
+        against `LOGIN_RE`). A `FORBIDDEN` error on the checks of a commit whose rollup state
+        was read is not counted: the checks are hidden, no result is missing. A `RATE_LIMITED`
+        error, any other error,
         or errors without a `data.<root>` object raise `GitHubError` (fixed message);
         `allow_missing` accepts a null `data.<root>` with only those two kinds of errors (an
         owner the token may not see: the caller counts it and goes on)."""
@@ -240,7 +357,7 @@ class Client:
             raise GitHubError("github: malformed response")
         found = _get(document, "data", root)
         errors = document.get("errors")
-        partial = 0
+        hiding = Hiding()
         if errors:
             types = _types(errors)
             if "RATE_LIMITED" in types:
@@ -253,8 +370,12 @@ class Client:
             ):
                 known = sorted({kind for kind in types if kind in KNOWN_ERROR_TYPES})
                 raise GitHubError(f"github: query failed ({', '.join(known) or 'unknown error'})")
-            partial = len(errors)
-        return found, partial
+            scope = owner if owner is not None and LOGIN_RE.fullmatch(owner) else None
+            data = document.get("data")
+            real = [error for error in errors if not _check_context(data, error)]
+            reasons = [classify(error) for error in real if error.get("type") == "FORBIDDEN"]
+            hiding = Hiding(len(real), merge([Hidden(scope, reason, 1) for reason in reasons]))
+        return found, hiding
 
     def _post(self, body: bytes, deadline: float) -> Response:
         headers = {

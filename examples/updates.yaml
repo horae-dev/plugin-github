@@ -1,4 +1,4 @@
-# pipelines/github-updates.yaml: a to-do of what is new for you on GitHub (plugin-github 0.5.1).
+# pipelines/github-updates.yaml: a to-do of what is new for you on GitHub (plugin-github 0.5.2).
 #
 # Every 30 minutes on weekdays, 08:00 to 20:30 (the instance time zone). No LLM step.
 # - collect: `github.updates` lists the open issues and pull requests of the owners (and, with

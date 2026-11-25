@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.5.2
+
+- Fix (#17): `github.ci_failures` on private repositories with a fine-grained token. The
+  rollup state is readable but each check run is `FORBIDDEN`; the failure is now reported with
+  `checks: []` and `checks_hidden: true` (title: `checks hidden from this token`), and these
+  hidden checks are no longer counted in `errors` nor make the call `partial`. Items really
+  missing are still counted.
+- New `hidden` field on every search source and `github.ci_failures`: `[{"owner", "reason",
+  "count"}]` for `FORBIDDEN` errors, `reason` from a closed set (`token_lifetime`,
+  `token_not_allowed`, `saml`, `ip_allow_list`, `not_accessible`, `forbidden`) chosen by
+  matching known message shapes, `owner` the validated login of the query scope (`null` for
+  `involves:@me`). GitHub's text is never copied. README: an organisation may require
+  fine-grained tokens with an expiry of at most 366 days.
+
 ## 0.5.1
 
 - Fix: `github.assigned`, `github.mentions` and `github.updates` found nothing with a

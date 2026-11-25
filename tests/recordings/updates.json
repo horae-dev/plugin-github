@@ -117,7 +117,8 @@
       "filtered": 4,
       "skipped": 1,
       "partial": false,
-      "errors": 0
+      "errors": 0,
+      "hidden": []
     },
     "intents": [
       {

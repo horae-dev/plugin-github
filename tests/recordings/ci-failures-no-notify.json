@@ -27,6 +27,7 @@
           ],
           "more_checks": 0,
           "unread_checks": 0,
+          "checks_hidden": false,
           "since": "2026-10-30",
           "url": "https://github.com/acme-org/api/actions/runs/9001",
           "title": "main: Nightly / build, Nightly / test failing since 2026-10-30 (9c13c49)"
@@ -42,6 +43,7 @@
           ],
           "more_checks": 0,
           "unread_checks": 0,
+          "checks_hidden": false,
           "since": "2026-10-19",
           "url": "https://github.com/acme-org/docs/commit/1eb974a68bff655ca4a96d8278301e0e1e125494",
           "title": "trunk: ci/external failing since 2026-10-19 (1eb974a)"
@@ -57,6 +59,7 @@
           ],
           "more_checks": 0,
           "unread_checks": 59,
+          "checks_hidden": false,
           "since": "2026-10-25",
           "url": "https://github.com/acme-user/dotfiles/actions/runs/77",
           "title": "main: Lint (59 checks not read) failing since 2026-10-25 (c4e9075)"
@@ -67,7 +70,8 @@
       "filtered": 5,
       "skipped": 0,
       "partial": false,
-      "errors": 0
+      "errors": 0,
+      "hidden": []
     },
     "intents": []
   }
