@@ -1,6 +1,15 @@
 # Changelog
 
-## 0.2.0 (unreleased)
+## 0.3.0
+
+- **Installs with `horae plugin add`** (horae-dev/horae#199): `horae-sdk` now comes from PyPI
+  (`>=0.9,<0.10`) instead of the core's `main` branch (the installer refuses a git source: no
+  hash), and `exclude-newer` is gone from `pyproject.toml` (`horae plugin add` runs
+  `uv sync --locked --no-config`, which ignores `[tool.uv]`, so the lock never matched).
+  Renovate's `minimumReleaseAge` keeps the 7-day cooldown. No behaviour change; no SDK API
+  change was needed between 0.2 and 0.9.
+
+## 0.2.0
 
 - **Optional secrets** (core decision 56): `GITHUB_NOTIFICATIONS_TOKEN` moves to
   `permissions.optional_secrets`, so no placeholder token is needed when `github.notifications`
