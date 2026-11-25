@@ -753,6 +753,7 @@ def build(
                 excluded=frozenset(v.lower() for v in exclude_repos or []),
                 cutoff=cutoff,
                 include_bots=include_bots,
+                day=day,
             )
         except GitHubError as error:
             raise PluginError(str(error)) from None

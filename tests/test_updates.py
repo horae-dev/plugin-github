@@ -339,3 +339,47 @@ def test_without_a_node_id_the_fingerprint_falls_back_to_the_number() -> None:
     assert found.node_id is None
     assert found.item_fingerprint.startswith("github:issue:acme-org-api:1::")
     assert found.fingerprint.startswith("github:update:acme-org-api-1:opened-2026-10-17T09-00-00Z")
+
+
+def forged_commit(at: str) -> dict[str, Any]:
+    return {
+        "__typename": "PullRequestCommit",
+        "id": "PRC_forged",
+        "commit": {"committedDate": at, "author": {"user": {"login": ME}}},
+    }
+
+
+def test_a_forged_commit_in_your_name_does_not_hide_a_newer_comment() -> None:
+    """Anyone can author a commit with your e-mail and any date: it is not your action."""
+    node = {
+        **issue("bob", []),
+        "__typename": "PullRequest",
+        "prTimeline": {"nodes": [comment(1, "bob", 21), forged_commit("2099-01-01T00:00:00Z")]},
+    }
+    found = verdict(node)
+    assert isinstance(found, updates.Update)
+    assert found.last.kind == "commented"
+    assert found.since is None
+
+
+def test_your_real_actions_still_count_next_to_your_commits() -> None:
+    node = {
+        **issue(ME, []),
+        "__typename": "PullRequest",
+        "prTimeline": {"nodes": [comment(1, "bob", 20), forged_commit("2026-10-21T10:00:00Z")]},
+    }
+    found = verdict(node)
+    assert isinstance(found, updates.Update)
+    assert found.since == "2026-10-17T09:00:00Z"
+
+
+def test_a_future_time_is_clamped_to_the_end_of_the_run_day() -> None:
+    future = {
+        "__typename": "PullRequestCommit",
+        "id": "PRC_future",
+        "commit": {"committedDate": "2099-01-01T00:00:00Z", "author": {"user": {"login": "bob"}}},
+    }
+    node = {**issue(ME, []), "__typename": "PullRequest", "prTimeline": {"nodes": [future]}}
+    found = updates.update(node, ME, "2026-10-16", False, "2026-10-30T23:59:59Z")
+    assert isinstance(found, updates.Update)
+    assert found.last.at == "2026-10-30T23:59:59Z"

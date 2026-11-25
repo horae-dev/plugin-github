@@ -6,8 +6,9 @@
   something after your last action on them. One search per `orgs` / `users` / `repos` value,
   plus `involves:@me` anywhere (`involves_me`, default), `updated:>=` the window
   (`since_days`, default 14), open only unless `include_closed`; each item's last 25 timeline
-  events decide: your last action (comment, review, commit, push, close, merge, review request,
-  or opening it) against the latest event by someone else. Bots (type `Bot`, `[bot]` logins,
+  events decide: your last action (comment, submitted review, force push, close, merge, reopen,
+  review request, or opening it; never a commit, whose date and author the committer chooses)
+  against the latest event by someone else; times past the run's day are clamped. Bots (type `Bot`, `[bot]` logins,
   commits whose author is no GitHub account) are left out unless `include_bots`; a review
   request counts only when it asks you. No plugin state. Data: repository, number, type,
   sanitised title, `event` (closed set), `by`, `at`, `your_last_action`, link rebuilt from

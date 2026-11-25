@@ -12,9 +12,13 @@ All GraphQL, within one call deadline (`Client.deadline`):
   reopens, merges and review requests.
 
 **New for you** is decided from the timeline alone, so the plugin keeps no state. Your last
-action is the latest event whose actor is you (a comment, a review, a commit you authored, a
-force push, a close, a merge, a review request you made), or the item's creation when you
-opened it. The latest **other** event is the latest event by anyone else, bots left out unless
+action is the latest event GitHub timestamps and attributes to you (a comment, a submitted
+review, a force push, a close, a merge, a reopen, a review request you made), or the item's
+creation when you opened it. A commit is never your action: its date and author are whatever
+the committer wrote, so a forged commit "by you" in the future would hide real activity. Any
+time after the end of the run's day is clamped to it.
+
+The latest **other** event is the latest event by anyone else, bots left out unless
 `include_bots` (an actor of type `Bot`, a login ending in `[bot]`, or a commit whose author is
 no GitHub account), and a review request
 counted only when it asks you. The item is new when that event is after your last action (or
@@ -36,7 +40,7 @@ rebuilt from the validated repository and the integer number
 
 import re
 from collections.abc import Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import date
 from typing import Any
 
@@ -129,6 +133,8 @@ query($q: String!, $first: Int!, $after: String) {{
   }}
 }}"""
 VIEWER_QUERY = "query { viewer { login } }"
+LATEST = "9999-12-31T23:59:59Z"
+"""No clamp (tests); a call clamps to the end of the run's day."""
 
 
 @dataclass(frozen=True)
@@ -144,6 +150,8 @@ class Event:
     """The event's node id, or `<kind>-<at>` without one: part of the fingerprint."""
     asks_viewer: bool = False
     """A review request whose reviewer is the viewer."""
+    commit: bool = False
+    """A pull request commit: its date and author are the committer's claim, not GitHub's."""
 
 
 @dataclass(frozen=True)
@@ -281,11 +289,20 @@ def event(node: object, viewer: str) -> Event | None:
     if kind is None or at is None or actor is None:
         return None
     key = node_id if isinstance(node_id, str) and NODE_ID_RE.fullmatch(node_id) else None
-    return Event(kind, at, actor[0], actor[1], key or f"{kind}-{at}", asks)
+    commit = typename == "PullRequestCommit"
+    return Event(kind, at, actor[0], actor[1], key or f"{kind}-{at}", asks, commit)
 
 
-def judge(node: dict[str, Any], viewer: str, include_bots: bool) -> tuple[Event | None, str | None]:
-    """`(latest other event, your last action)` of one well-formed item."""
+def judge(
+    node: dict[str, Any], viewer: str, include_bots: bool, latest: str = LATEST
+) -> tuple[Event | None, str | None]:
+    """`(latest other event, your last action)` of one well-formed item. Times after `latest`
+    (the end of the run's day) are clamped to it.
+
+    A commit's date and author are chosen by whoever made the commit (any e-mail, any date),
+    so a commit is never your action: one carrying your identity is ignored, and another's
+    counts only as someone else's push. Your actions are events GitHub timestamps itself and
+    attributes to the authenticated actor."""
     me = viewer.lower()
     events: list[Event] = []
     opened = _stamp(node.get("createdAt"))
@@ -303,7 +320,11 @@ def judge(node: dict[str, Any], viewer: str, include_bots: bool) -> tuple[Event 
     mine: str | None = None
     other: Event | None = None
     for found in events:  # in timeline order: a later event wins a tie
+        if found.at > latest:
+            found = replace(found, at=latest)
         if found.login is not None and found.login.lower() == me:
+            if found.commit:
+                continue
             mine = found.at if mine is None or found.at >= mine else mine
             continue
         if (found.bot and not include_bots) or (
@@ -319,7 +340,9 @@ def judge(node: dict[str, Any], viewer: str, include_bots: bool) -> tuple[Event 
     return other, mine
 
 
-def update(node: object, viewer: str, cutoff: str, include_bots: bool) -> Update | str:
+def update(
+    node: object, viewer: str, cutoff: str, include_bots: bool, latest: str = LATEST
+) -> Update | str:
     """The item's update for you, or why there is none: `old` (nothing new for you, or
     nothing inside the window) or `malformed`."""
     if not isinstance(node, dict):
@@ -331,7 +354,7 @@ def update(node: object, viewer: str, cutoff: str, include_bots: bool) -> Update
     number = node.get("number")
     if names is None or repo is None or type(number) is not int or not 0 < number < 2**31:
         return "malformed"
-    other, mine = judge(node, viewer, include_bots)
+    other, mine = judge(node, viewer, include_bots, latest)
     if other is None or other.at[:10] < cutoff or (mine is not None and other.at <= mine):
         return "old"
     title = node.get("title")
@@ -368,6 +391,7 @@ def collect(
     excluded: frozenset[str],
     cutoff: date,
     include_bots: bool,
+    day: date | None = None,
 ) -> Found:
     """Every item with something new for you, newest first. Raises `GitHubError` when the
     viewer cannot be read or a search fails (rate limit, error); out of time after the viewer,
@@ -393,9 +417,9 @@ def collect(
                     continue
                 seen.add(node_id)
             nodes.append(node)
-    day = cutoff.isoformat()
+    latest = f"{day.isoformat()}T23:59:59Z" if day is not None else LATEST
     for node in nodes:
-        result = update(node, viewer, day, include_bots)
+        result = update(node, viewer, cutoff.isoformat(), include_bots, latest)
         if result == "malformed":
             out.skipped += 1
             continue
