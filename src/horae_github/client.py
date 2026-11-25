@@ -242,9 +242,10 @@ class Client:
     def __repr__(self) -> str:
         return "Client(<token hidden>)"
 
-    def deadline(self) -> float:
-        """The deadline of a call that starts now: `budget` seconds on the client's clock."""
-        return self._clock() + self._budget
+    def deadline(self, budget: float | None = None) -> float:
+        """The deadline of a call that starts now: `budget` seconds (default: the client's)
+        on the client's clock, never past the client's own budget."""
+        return self._clock() + (self._budget if budget is None else min(budget, self._budget))
 
     def time_left(self, deadline: float) -> float:
         return deadline - self._clock()
@@ -338,7 +339,8 @@ class Client:
         allow_missing: bool = False,
         owner: str | None = None,
     ) -> tuple[Any, Hiding]:
-        """`data.<root>` of one GraphQL request, and what came hidden with it: how many
+        """`data.<root>` of one GraphQL request (`data` itself for an empty `root`: a query of
+        aliased fields), and what came hidden with it: how many
         `FORBIDDEN` / `NOT_FOUND` errors (results hidden, the rest kept), the `FORBIDDEN` ones
         by reason under `owner` (the owner the request was scoped to, if it was; checked
         against `LOGIN_RE`). A `FORBIDDEN` error on the checks of a commit whose rollup state
@@ -355,7 +357,7 @@ class Client:
             raise GitHubError("github: malformed response") from None
         if not isinstance(document, dict):
             raise GitHubError("github: malformed response")
-        found = _get(document, "data", root)
+        found = _get(document, "data", root) if root else _get(document, "data")
         errors = document.get("errors")
         hiding = Hiding()
         if errors:

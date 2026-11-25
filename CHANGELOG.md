@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.6.0
+
+- `github.notifications` (#8): items resolve to the node id the search sources use, so a
+  notification about an item that `review_requests`, `assigned` or `mentions` already proposed
+  is one task, not two. One batched GraphQL query per 50 items (aliases; owner, name and number
+  as variables), only when `GITHUB_TOKEN` is set and the new parameter `node_ids` is true (the
+  default); otherwise, or when an item is not visible to that token, has the other type, or a
+  query fails, the repository/number fallback fingerprint is kept and the call never fails.
+  The data gains `node_ids: {"resolved", "fallback"}`.
+- **Fingerprint change**: a notification-only item (not covered by a search source) gets a
+  node-id fingerprint the first time it is resolved, so its task is created once more under the
+  new key. `node_ids: false` keeps the 0.5 keys. No new host, secret or permission.
+
 ## 0.5.4
 
 - `github.updates`, the low-severity follow-ups of #15:

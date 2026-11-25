@@ -29,8 +29,10 @@ node id; review requests and CI pull requests are `is:pr` already.
 
 - `github.notifications`: unread notifications you participate in (REST, read only, a classic
   token in its own secret `GITHUB_NOTIFICATIONS_TOKEN`; see `notifications.py`). The API gives
-  no node id, so its fingerprint is the repository-and-number fallback and does **not** collapse
-  with the node-id fingerprint of the search sources.
+  no node id: with `GITHUB_TOKEN` set, one batched GraphQL query per 50 items resolves each
+  repository and number to the node id (see `nodeids.py`), so its fingerprint is the search
+  sources' and the item collapses with theirs; otherwise (no token, `node_ids: false`, not
+  visible to that token, any failure) the repository-and-number fallback.
 
 - `github.ci_failures`: repositories whose default branch, or your own open pull requests,
   have a failing CI (see `ci.py`). It proposes no task: data for a note, and with `notify`
@@ -47,14 +49,14 @@ or logs.
 import os
 import re
 from collections.abc import Callable, Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import date, datetime, timedelta
 from typing import Any
 
 from horae_sdk import Call, Output, Permissions, Plugin, PluginError, intents, tasks
 from horae_sdk.tasks import is_task_link
 
-from horae_github import ci, due, updates
+from horae_github import ci, due, nodeids, updates
 from horae_github.client import LOGIN_RE, RETURNED_REPO_RE, Client, GitHubError, Hidden
 from horae_github.http import HOST, Transport
 from horae_github.notifications import SECRET as NOTIFICATIONS_SECRET
@@ -63,7 +65,7 @@ from horae_github.notifications import NotificationsClient
 NAME = "github"
 """The plugin's name, also the namespace of its refs (`github.review_requests`) and
 fingerprints (`github:pr:<node id>`)."""
-VERSION = "0.5.4"
+VERSION = "0.6.0"
 COMMAND = ["python3", "-m", "horae_github"]
 """`runtime.command` of `plugin.yaml`. When installing, pin an absolute interpreter that has
 this package (the host's `PATH` is fixed and its working directory empty)."""
@@ -523,6 +525,21 @@ def build(
             skip_covered=skip_covered,
         )
 
+    def lookup_node_ids(
+        candidates: Sequence[tuple[Item, str]], wanted: bool
+    ) -> tuple[dict[nodeids.Ref, str], int]:
+        """`(node id by (repo, number, type), items left with the fallback fingerprint)`. Only
+        with the search token set and `wanted`; any failure leaves the fallback."""
+        refs = list(dict.fromkeys((item.repo, item.number, item.type) for item, _ in candidates))
+        token = environ.get(SECRET)
+        if not wanted or not token or not refs:
+            return {}, len(refs)
+        try:
+            looked = nodeids.resolve(client(token), refs)
+        except GitHubError:  # `resolve` handles its own; a client factory may still raise
+            return {}, len(refs)
+        return looked.ids, len(refs) - len(looked.ids)
+
     @plugin.source(f"{NAME}.notifications")
     def notifications(
         call: Call,
@@ -533,13 +550,16 @@ def build(
         users: list[str] | None = None,
         repos: list[str] | None = None,
         exclude_repos: list[str] | None = None,
+        node_ids: bool = True,
         max_items: int = 50,
         today: str | None = None,
         timezone: str | None = None,
     ) -> Output:
         """Unread notifications you participate in, for pull requests and issues,
         limited to `reasons` (default: review_requested, assign, mention, team_mention). Read
-        only: nothing is marked read. Due `due_in_days` days after the run's day."""
+        only: nothing is marked read. Due `due_in_days` days after the run's day. With
+        `node_ids` (and `GITHUB_TOKEN` set), each item's GraphQL node id is looked up (one
+        batched query per 50 items) so an item the search sources propose too is one task."""
         _offset(due_in_days)
         if type(max_items) is not int or not 1 <= max_items <= MAX_ITEMS:
             raise PluginError(f"github: max_items is 1 to {MAX_ITEMS}")
@@ -575,7 +595,7 @@ def build(
             found = notifications_client(token).participating(max_items=max_items, since=since)
         except GitHubError as error:
             raise PluginError(str(error)) from None
-        items: dict[str, tuple[Item, str]] = {}
+        candidates: list[tuple[Item, str]] = []
         skipped = filtered = 0
         for thread in found.threads:
             parsed = parse_notification(thread)
@@ -590,6 +610,11 @@ def build(
             if reason not in wanted or repo in excluded or outside:
                 filtered += 1
                 continue
+            candidates.append((item, reason))
+        resolved, unresolved = lookup_node_ids(candidates, node_ids)
+        items: dict[str, tuple[Item, str]] = {}
+        for item, reason in candidates:
+            item = replace(item, node_id=resolved.get((item.repo, item.number, item.type)))
             items.setdefault(item.fingerprint, (item, reason))
         ordered = sorted(items.values(), key=lambda p: (p[0].repo.lower(), p[0].number, p[0].type))
         data: list[dict[str, Any]] = []
@@ -627,6 +652,7 @@ def build(
                 "filtered": filtered,
                 "poll_interval": found.poll_interval,
                 "rate_limit_remaining": found.rate_limit_remaining,
+                "node_ids": {"resolved": len(resolved), "fallback": unresolved},
             },
             intents=tasks_,
         )

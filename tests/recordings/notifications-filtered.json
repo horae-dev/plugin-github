@@ -44,7 +44,11 @@
       "skipped": 6,
       "filtered": 3,
       "poll_interval": 60,
-      "rate_limit_remaining": 4990
+      "rate_limit_remaining": 4990,
+      "node_ids": {
+        "resolved": 0,
+        "fallback": 2
+      }
     },
     "intents": [
       {

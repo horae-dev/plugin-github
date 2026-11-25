@@ -13,7 +13,11 @@
       "skipped": 0,
       "filtered": 0,
       "poll_interval": 120,
-      "rate_limit_remaining": null
+      "rate_limit_remaining": null,
+      "node_ids": {
+        "resolved": 0,
+        "fallback": 0
+      }
     },
     "intents": []
   }
