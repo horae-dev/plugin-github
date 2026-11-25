@@ -19,7 +19,11 @@ review, a force push, a close, a merge, a reopen, a review request you made), or
 creation when you opened it. A commit is never your action: its date and author are whatever
 the committer wrote, so a forged commit "by you" in the future would hide real activity. Any
 time after the end of the day following the run's day is clamped to it, and a commit's date to
-the item's `updatedAt`.
+the item's `updatedAt` (an item without one has its commits ignored: fail closed).
+
+Known limits (README, "Updates"): a plain push dated before your last action stays unseen (no
+server time exists for it); events of the same second are ordered by their place in the
+timeline (`Event.pos`), so one right after your reply is new.
 
 The latest **other** event is the latest event by anyone else, bots left out unless
 `include_bots` (an actor of type `Bot`, a login ending in `[bot]`, or, on a bot's own item, a
@@ -154,6 +158,9 @@ class Event:
     """A review request whose reviewer is the viewer."""
     commit: bool = False
     """A pull request commit: its date and author are the committer's claim, not GitHub's."""
+    pos: int = 0
+    """Position in the item's timeline (the opening, then GitHub's own order): breaks a tie
+    between two events of the same second."""
 
 
 @dataclass(frozen=True)
@@ -298,8 +305,9 @@ def event(node: object, viewer: str) -> Event | None:
 
 def judge(
     node: dict[str, Any], viewer: str, include_bots: bool, latest: str = LATEST
-) -> tuple[Event | None, str | None]:
-    """`(latest other event, your last action)` of one well-formed item. Times after `latest`
+) -> tuple[Event | None, tuple[str, int] | None]:
+    """`(latest other event, your last action as (time, timeline position))` of one
+    well-formed item. Times after `latest`
     (the end of the following day: GitHub's times are UTC, the run's day is in its time zone)
     are clamped to it.
 
@@ -310,7 +318,9 @@ def judge(
     claim), and a commit in your name counts as someone's push on an item that is not
     yours (anyone can write your e-mail into a commit); on your own item it is ignored.
     Your actions are events GitHub timestamps itself and attributes to the authenticated
-    actor."""
+    actor. A commit of an item without `updatedAt` cannot be bounded and is ignored (GitHub
+    always sends it: fail closed). Times have a resolution of one second, so two events of
+    the same second are ordered by their place in the timeline."""
     me = viewer.lower()
     events: list[Event] = []
     opened = _stamp(node.get("createdAt"))
@@ -325,15 +335,18 @@ def judge(
         found = event(raw, viewer)
         if found is not None:
             events.append(found)
+    events = [replace(found, pos=position) for position, found in enumerate(events)]
     updated = _stamp(node.get("updatedAt"))
     own_item = author is not None and (author[0] or "").lower() == me
     bot_item = author is not None and author[1]
-    mine: str | None = None
+    mine: tuple[str, int] | None = None
     other: Event | None = None
     for found in events:  # in timeline order: a later event wins a tie
         if found.commit:
+            if updated is None:
+                continue
             found = replace(found, bot=found.bot and bot_item)
-            if updated is not None and found.at > updated:
+            if found.at > updated:
                 found = replace(found, at=updated)
             if found.login is not None and found.login.lower() == me:
                 if own_item:
@@ -344,7 +357,7 @@ def judge(
         if found.login is not None and found.login.lower() == me:
             if found.commit:
                 continue
-            mine = found.at if mine is None or found.at >= mine else mine
+            mine = (found.at, found.pos) if mine is None or found.at >= mine[0] else mine
             continue
         if (found.bot and not include_bots) or (
             found.kind == "review_requested" and not found.asks_viewer
@@ -374,7 +387,10 @@ def update(
     if names is None or repo is None or type(number) is not int or not 0 < number < 2**31:
         return "malformed"
     other, mine = judge(node, viewer, include_bots, latest)
-    if other is None or other.at[:10] < cutoff or (mine is not None and other.at <= mine):
+    if other is None or other.at[:10] < cutoff:
+        return "old"
+    # new when after your last action; in the same second, when it comes later in the timeline
+    if mine is not None and (other.at, other.pos) <= mine:
         return "old"
     title = node.get("title")
     node_id = node.get("id")
@@ -386,7 +402,7 @@ def update(
         number=number,
         title=text(title, MAX_TITLE) if isinstance(title, str) else "",
         last=other,
-        since=mine,
+        since=mine[0] if mine is not None else None,
     )
     # the link must be one the SDK (and the core) accepts; never raised on
     return found if is_task_link(found.url) else "malformed"

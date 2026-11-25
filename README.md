@@ -243,6 +243,12 @@ steps:
 
 The item is listed when that event is **after** your last action (or you never acted) and on or after the window's first day. So an issue opened in the window by someone else in a followed owner is listed until you act on it; your own pull request is listed when someone reviews, comments or pushes, not before. No state is kept by the plugin: everything comes from GitHub's timeline. When your last action is older than the 25 events read, every other event read is after it, which is what "new" means anyway.
 
+Limits of a timeline-only reading:
+
+- **Backdated plain pushes stay unseen.** A pushed commit carries the date its committer wrote, GitHub gives no server time for a plain (non-force) push, and a commit's date is capped by the item's `updatedAt` (below). A commit dated before your last action therefore does not count as news, though it was pushed after it. Force pushes have GitHub's own time and are not affected. Nothing in the timeline lets the plugin do better without keeping state.
+- **Same second.** Times have a resolution of one second. An event in the same second as your action counts as new when it comes **after** yours in the timeline (GitHub's order), and as old when it comes before.
+- **Fail closed on commits.** A commit's date is bounded by the item's `updatedAt`; an item without one (GitHub always sends it) has its commits ignored rather than trusted.
+
 | Parameter | Default | Meaning |
 |---|---|---|
 | `orgs`, `users`, `repos` | none | owners and repositories you follow, one search each (as for the other sources); at least one is required |
@@ -252,6 +258,7 @@ The item is listed when that event is **after** your last action (or you never a
 | `include_closed` | false | also closed and merged items (a merge or close by someone else is then news) |
 | `include_bots` | false | count bot activity too (above) |
 | `notify` | false | propose one `notify.push` per item (below); the pipeline then needs a `notify` entry |
+| `notify_max` | none (every item) | at most this many pushes per call, 1 to 100, newest first; see "Since the last check" |
 | `max_items` | 50 | at most this many items, 1 to 100, newest first (`truncated` past it) |
 | `today`, `timezone` | as above | the run's day, for the window |
 
@@ -283,7 +290,9 @@ The item is listed when that event is **after** your last action (or you never a
   "filtered": 4,
   "skipped": 1,
   "partial": false,
-  "errors": 0
+  "errors": 0,
+  "hidden": [],
+  "notify_skipped": 0
 }
 ```
 
@@ -292,7 +301,7 @@ The item is listed when that event is **after** your last action (or you never a
 - **Identity**: `fingerprint` is the item's node id and the latest other event's id; `item_fingerprint` is the item's fingerprint in the other search sources (`github:pr:<node id>`), to match a task.
 - **Untrusted text**: titles and logins are chosen by others. They reach the data and the pushes through the SDK's `escape_title` then `plain_text` (control, bidi and zero-width characters removed; titles 150 characters at most, logins 60). They are data: `obsidian.render_note` escapes them again, plugin-ntfy sends plain text. Links are built from the validated repository and the integer number (`https://github.com/<repo>/pull|issues/<n>`), never taken from GitHub. `tests/recordings/updates-hostile.json` shows them neutralised.
 
-**Since the last check** (`notify: true`). One `notify.push` per item, titled `<repo>#<n>: <who> <what>`, the item's title as body, its link, and `key` set to its fingerprint. The core sends a keyed push **once for good** (schemas decision 57, amended), and the key holds the latest other event, so each event is pushed once and newer activity on the same item is pushed again. On the first run every current item is pushed once. Route the pushes as for [CI failures](#ci-failures): one `ntfy.push` entry per owner with its `link_prefix`; an `involves_me` item of an owner no entry covers is not pushed (`intent_skipped`) but stays in the note.
+**Since the last check** (`notify: true`). One `notify.push` per item, titled `<repo>#<n>: <who> <what>`, the item's title as body, its link, and `key` set to its fingerprint. The core sends a keyed push **once for good** (schemas decision 57, amended), and the key holds the latest other event, so each event is pushed once and newer activity on the same item is pushed again. On the first run every current item is pushed once: **`notify_max`** bounds that burst (the `notify_max` newest items are pushed, the others stay in the data, counted in `notify_skipped`). The plugin keeps no state, so it cannot tell a first run from the next: items already pushed in earlier runs still take part of the bound. Use it to tame a first run (then remove it or raise it), not as a permanent setting; it is the same parameter as in [CI failures](#ci-failures). Route the pushes as for [CI failures](#ci-failures): one `ntfy.push` entry per owner with its `link_prefix`; an `involves_me` item of an owner no entry covers is not pushed (`intent_skipped`) but stays in the note.
 
 **A note** of what is new: `obsidian.render_note` with a block of its own, rewritten every run (`_None._` when you are up to date). What the note does not show: links (plain escaped bullets), the order (render_note sorts the lines alphabetically, so by repository and number, not by time), the time of the event, and this source's `truncated` / `partial` flags (only the task source's flags become alerts; its `expect` alert fires when the source failed).
 

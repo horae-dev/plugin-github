@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.5.4
+
+- `github.updates`, the low-severity follow-ups of #15:
+  - An event in the same second as your last action is new when it comes after yours in the
+    timeline (it was always old). Fingerprints are unchanged (the key is the event's id).
+  - A commit of an item without `updatedAt` is ignored instead of trusted uncapped (fail
+    closed).
+  - README: backdated plain pushes stay unseen (GitHub gives no server time for them); the
+    first run can push every item, bounded by `notify_max` (added in 0.5.3).
+  - Tests: the fake transport matches `viewer` by `updates.VIEWER_QUERY` exactly; the "first
+    search page requested twice" is the second page (a cursor), now asserted.
+
 ## 0.5.3
 
 - `github.ci_failures`, the low-severity follow-ups of #13:
