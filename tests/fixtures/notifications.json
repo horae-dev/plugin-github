@@ -31,7 +31,7 @@
         "reason": "mention",
         "updated_at": "2026-10-30T08:00:00Z",
         "subject": {
-          "title": "Crash on empty export ‮txt.exe 📅 2020-01-01 🔁 every day [x](https://evil.example)",
+          "title": "Crash on empty export \u202etxt.exe \ud83d\udcc5 2020-01-01 \ud83d\udd01 every day [x](https://evil.example)",
           "url": "https://api.github.com/repos/acme-org/api/issues/12",
           "latest_comment_url": null,
           "type": "Issue"
@@ -307,5 +307,107 @@
       "x-poll-interval": "120"
     },
     "body": []
+  },
+  {
+    "name": "node-ids",
+    "path": "/notifications?all=false&participating=true&per_page=50&page=1&since=2026-05-01T00%3A00%3A00Z",
+    "status": 200,
+    "headers": {
+      "x-poll-interval": "60",
+      "x-ratelimit-remaining": "4990",
+      "x-ratelimit-reset": "1793350800"
+    },
+    "body": [
+      {
+        "id": "40",
+        "unread": true,
+        "reason": "review_requested",
+        "updated_at": "2026-10-30T08:00:00Z",
+        "subject": {
+          "title": "Resolved pull request",
+          "url": "https://api.github.com/repos/acme-org/api/pulls/50",
+          "latest_comment_url": null,
+          "type": "PullRequest"
+        },
+        "repository": {
+          "full_name": "acme-org/api"
+        }
+      },
+      {
+        "id": "41",
+        "unread": true,
+        "reason": "mention",
+        "updated_at": "2026-10-30T08:00:00Z",
+        "subject": {
+          "title": "Resolved pull request",
+          "url": "https://api.github.com/repos/acme-org/api/pulls/50",
+          "latest_comment_url": null,
+          "type": "PullRequest"
+        },
+        "repository": {
+          "full_name": "acme-org/api"
+        }
+      },
+      {
+        "id": "42",
+        "unread": true,
+        "reason": "mention",
+        "updated_at": "2026-10-30T08:00:00Z",
+        "subject": {
+          "title": "Resolved issue",
+          "url": "https://api.github.com/repos/acme-org/api/issues/51",
+          "latest_comment_url": null,
+          "type": "Issue"
+        },
+        "repository": {
+          "full_name": "acme-org/api"
+        }
+      },
+      {
+        "id": "43",
+        "unread": true,
+        "reason": "mention",
+        "updated_at": "2026-10-30T08:00:00Z",
+        "subject": {
+          "title": "Node is an issue: keeps the fallback",
+          "url": "https://api.github.com/repos/acme-org/api/pulls/52",
+          "latest_comment_url": null,
+          "type": "PullRequest"
+        },
+        "repository": {
+          "full_name": "acme-org/api"
+        }
+      },
+      {
+        "id": "44",
+        "unread": true,
+        "reason": "assign",
+        "updated_at": "2026-10-30T08:00:00Z",
+        "subject": {
+          "title": "Not visible to the search token",
+          "url": "https://api.github.com/repos/acme-org/api/issues/54",
+          "latest_comment_url": null,
+          "type": "Issue"
+        },
+        "repository": {
+          "full_name": "acme-org/api"
+        }
+      },
+      {
+        "id": "45",
+        "unread": true,
+        "reason": "subscribed",
+        "updated_at": "2026-10-30T08:00:00Z",
+        "subject": {
+          "title": "Filtered before the lookup",
+          "url": "https://api.github.com/repos/acme-org/api/issues/53",
+          "latest_comment_url": null,
+          "type": "Issue"
+        },
+        "repository": {
+          "full_name": "acme-org/api"
+        }
+      }
+    ]
   }
 ]

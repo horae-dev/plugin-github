@@ -35,6 +35,29 @@ class FakeTransport:
     def __init__(self, fixtures: list[dict[str, Any]]) -> None:
         self.fixtures = fixtures
         self.requests: list[dict[str, Any]] = []
+        self.known: dict[str, list[str]] = json.loads(
+            (HERE / "fixtures" / "node_ids.json").read_text("utf-8")
+        )
+
+    def node_ids(self, variables: Mapping[str, Any]) -> Response:
+        """The batched node id lookup (`nodeids.document`): each alias `r<n>` answers from
+        `tests/fixtures/node_ids.json` (`owner/name#number` to `[__typename, id]`); an
+        unknown one is `null` with a `NOT_FOUND` error, as GitHub answers for a repository
+        the token cannot see."""
+        data: dict[str, Any] = {}
+        errors: list[dict[str, Any]] = []
+        for n in range(len(variables) // 3):
+            ref = f"{variables[f'o{n}']}/{variables[f'n{n}']}#{variables[f'i{n}']}"
+            if ref in self.known:
+                typename, node_id = self.known[ref]
+                data[f"r{n}"] = {"issueOrPullRequest": {"__typename": typename, "id": node_id}}
+            else:
+                data[f"r{n}"] = None
+                errors.append({"type": "NOT_FOUND", "path": [f"r{n}"], "message": "not found"})
+        body: dict[str, Any] = {"data": data}
+        if errors:
+            body["errors"] = errors
+        return Response(200, {}, json.dumps(body).encode())
 
     def post(
         self, path: str, body: bytes, headers: Mapping[str, str], *, deadline: float
@@ -44,6 +67,8 @@ class FakeTransport:
         request = json.loads(body)
         self.requests.append(request)
         variables = request["variables"]
+        if "issueOrPullRequest" in request["query"]:
+            return self.node_ids(variables)
         if "q" in variables:
             # GitHub returns nothing, silently, for a fine-grained token without a type
             assert {"is:issue", "is:pr"} & set(variables["q"].split()), variables["q"]

@@ -1,0 +1,94 @@
+{
+  "tool": "github.notifications",
+  "params": {
+    "since": "2026-05-01T00:00:00Z",
+    "today": "2026-10-30"
+  },
+  "expect": {
+    "data": {
+      "kind": "notifications",
+      "day": "2026-10-30",
+      "items": [
+        {
+          "fingerprint": "github:pr:PR_kwDOAcmeApi50",
+          "type": "pr",
+          "repo": "acme-org/api",
+          "number": 50,
+          "reason": "review_requested",
+          "title": "Resolved pull request",
+          "url": "https://github.com/acme-org/api/pull/50",
+          "due": "2026-11-01"
+        },
+        {
+          "fingerprint": "github:issue:I_kwDOAcmeApi51",
+          "type": "issue",
+          "repo": "acme-org/api",
+          "number": 51,
+          "reason": "mention",
+          "title": "Resolved issue",
+          "url": "https://github.com/acme-org/api/issues/51",
+          "due": "2026-11-01"
+        },
+        {
+          "fingerprint": "github:pr:acme-org-api:52::df5d099a94dbf4c2",
+          "type": "pr",
+          "repo": "acme-org/api",
+          "number": 52,
+          "reason": "mention",
+          "title": "Node is an issue: keeps the fallback",
+          "url": "https://github.com/acme-org/api/pull/52",
+          "due": "2026-11-01"
+        },
+        {
+          "fingerprint": "github:issue:acme-org-api:54::ed8e91ea33abb578",
+          "type": "issue",
+          "repo": "acme-org/api",
+          "number": 54,
+          "reason": "assign",
+          "title": "Not visible to the search token",
+          "url": "https://github.com/acme-org/api/issues/54",
+          "due": "2026-11-01"
+        }
+      ],
+      "truncated": false,
+      "skipped": 0,
+      "filtered": 1,
+      "poll_interval": 60,
+      "rate_limit_remaining": 4990,
+      "node_ids": {
+        "resolved": 2,
+        "fallback": 2
+      }
+    },
+    "intents": [
+      {
+        "type": "task.create",
+        "title": "Review acme-org/api\\#50: Resolved pull request",
+        "fingerprint": "github:pr:PR_kwDOAcmeApi50",
+        "due": "2026-11-01",
+        "link": "https://github.com/acme-org/api/pull/50"
+      },
+      {
+        "type": "task.create",
+        "title": "Answer mention in acme-org/api\\#51: Resolved issue",
+        "fingerprint": "github:issue:I_kwDOAcmeApi51",
+        "due": "2026-11-01",
+        "link": "https://github.com/acme-org/api/issues/51"
+      },
+      {
+        "type": "task.create",
+        "title": "Answer mention in acme-org/api\\#52: Node is an issue: keeps the fallback",
+        "fingerprint": "github:pr:acme-org-api:52::df5d099a94dbf4c2",
+        "due": "2026-11-01",
+        "link": "https://github.com/acme-org/api/pull/52"
+      },
+      {
+        "type": "task.create",
+        "title": "Work on acme-org/api\\#54: Not visible to the search token",
+        "fingerprint": "github:issue:acme-org-api:54::ed8e91ea33abb578",
+        "due": "2026-11-01",
+        "link": "https://github.com/acme-org/api/issues/54"
+      }
+    ]
+  }
+}
