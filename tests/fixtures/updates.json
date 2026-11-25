@@ -1,0 +1,791 @@
+[
+  {
+    "query": "viewer { login }",
+    "status": 200,
+    "headers": {},
+    "body": {
+      "data": {
+        "viewer": {
+          "login": "acme-me"
+        }
+      }
+    }
+  },
+  {
+    "q": "is:open archived:false sort:updated-desc updated:>=2026-10-16 org:acme-up",
+    "after": null,
+    "status": 200,
+    "headers": {},
+    "body": {
+      "data": {
+        "search": {
+          "pageInfo": {
+            "hasNextPage": true,
+            "endCursor": "dXA6MQ"
+          },
+          "nodes": [
+            {
+              "__typename": "Issue",
+              "id": "I_up1",
+              "number": 1,
+              "title": "Cache invalidation",
+              "createdAt": "2026-10-01T10:00:00Z",
+              "author": {
+                "__typename": "User",
+                "login": "bob"
+              },
+              "repository": {
+                "nameWithOwner": "acme-up/app"
+              },
+              "issueTimeline": {
+                "nodes": [
+                  {
+                    "__typename": "IssueComment",
+                    "id": "IC_1",
+                    "createdAt": "2026-10-20T10:00:00Z",
+                    "author": {
+                      "__typename": "User",
+                      "login": "acme-me"
+                    }
+                  },
+                  {
+                    "__typename": "IssueComment",
+                    "id": "IC_2",
+                    "createdAt": "2026-10-25T10:00:00Z",
+                    "author": {
+                      "__typename": "User",
+                      "login": "bob"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "__typename": "Issue",
+              "id": "I_up2",
+              "number": 2,
+              "title": "Docs typo",
+              "createdAt": "2026-10-02T10:00:00Z",
+              "author": {
+                "__typename": "User",
+                "login": "acme-me"
+              },
+              "repository": {
+                "nameWithOwner": "acme-up/app"
+              },
+              "issueTimeline": {
+                "nodes": [
+                  {
+                    "__typename": "IssueComment",
+                    "id": "IC_3",
+                    "createdAt": "2026-10-20T10:00:00Z",
+                    "author": {
+                      "__typename": "User",
+                      "login": "bob"
+                    }
+                  },
+                  {
+                    "__typename": "IssueComment",
+                    "id": "IC_4",
+                    "createdAt": "2026-10-22T10:00:00Z",
+                    "author": {
+                      "__typename": "User",
+                      "login": "acme-me"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "__typename": "PullRequest",
+              "id": "PR_up3",
+              "number": 3,
+              "title": "Bump lodash",
+              "createdAt": "2026-10-20T10:00:00Z",
+              "author": {
+                "__typename": "Bot",
+                "login": "dependabot"
+              },
+              "repository": {
+                "nameWithOwner": "acme-up/app"
+              },
+              "prTimeline": {
+                "nodes": [
+                  {
+                    "__typename": "PullRequestCommit",
+                    "id": "PRC_5",
+                    "commit": {
+                      "committedDate": "2026-10-21T09:00:00Z",
+                      "author": {
+                        "user": null
+                      }
+                    }
+                  },
+                  {
+                    "__typename": "IssueComment",
+                    "id": "IC_6",
+                    "createdAt": "2026-10-21T10:00:00Z",
+                    "author": {
+                      "__typename": "Bot",
+                      "login": "github-actions"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "__typename": "PullRequest",
+              "id": "PR_up4",
+              "number": 4,
+              "title": "Add retries",
+              "createdAt": "2026-10-18T10:00:00Z",
+              "author": {
+                "__typename": "User",
+                "login": "acme-me"
+              },
+              "repository": {
+                "nameWithOwner": "acme-up/app"
+              },
+              "prTimeline": {
+                "nodes": [
+                  {
+                    "__typename": "PullRequestCommit",
+                    "id": "PRC_7",
+                    "commit": {
+                      "committedDate": "2026-10-18T10:00:00Z",
+                      "author": {
+                        "user": {
+                          "login": "acme-me"
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "__typename": "PullRequestReview",
+                    "id": "PRR_8",
+                    "state": "APPROVED",
+                    "submittedAt": "2026-10-26T10:00:00Z",
+                    "author": {
+                      "__typename": "User",
+                      "login": "carol"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    }
+  },
+  {
+    "q": "is:open archived:false sort:updated-desc updated:>=2026-10-16 org:acme-up",
+    "after": "dXA6MQ",
+    "status": 200,
+    "headers": {},
+    "body": {
+      "data": {
+        "search": {
+          "pageInfo": {
+            "hasNextPage": false,
+            "endCursor": null
+          },
+          "nodes": [
+            {
+              "__typename": "PullRequest",
+              "id": "PR_up5",
+              "number": 5,
+              "title": "Rewrite parser",
+              "createdAt": "2026-10-17T10:00:00Z",
+              "author": {
+                "__typename": "User",
+                "login": "dave"
+              },
+              "repository": {
+                "nameWithOwner": "acme-up/app"
+              },
+              "prTimeline": {
+                "nodes": [
+                  {
+                    "__typename": "PullRequestReview",
+                    "id": "PRR_9",
+                    "state": "CHANGES_REQUESTED",
+                    "submittedAt": "2026-10-20T10:00:00Z",
+                    "author": {
+                      "__typename": "User",
+                      "login": "acme-me"
+                    }
+                  },
+                  {
+                    "__typename": "PullRequestCommit",
+                    "id": "PRC_10",
+                    "commit": {
+                      "committedDate": "2026-10-23T10:00:00Z",
+                      "author": {
+                        "user": {
+                          "login": "dave"
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "__typename": "HeadRefForcePushedEvent",
+                    "id": "E_11",
+                    "createdAt": "2026-10-24T10:00:00Z",
+                    "actor": {
+                      "__typename": "User",
+                      "login": "dave"
+                    }
+                  },
+                  {
+                    "__typename": "PullRequestReview",
+                    "id": "PRR_12",
+                    "state": "PENDING",
+                    "submittedAt": null,
+                    "author": {
+                      "__typename": "User",
+                      "login": "acme-me"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "__typename": "Issue",
+              "id": "I_up6",
+              "number": 6,
+              "title": "Crash on start",
+              "createdAt": "2026-10-27T10:00:00Z",
+              "author": {
+                "__typename": "User",
+                "login": "erin"
+              },
+              "repository": {
+                "nameWithOwner": "acme-up/api"
+              },
+              "issueTimeline": {
+                "nodes": []
+              }
+            },
+            {
+              "__typename": "Issue",
+              "id": "I_up7",
+              "number": 7,
+              "title": "Old question",
+              "createdAt": "2026-09-01T10:00:00Z",
+              "author": {
+                "__typename": "User",
+                "login": "frank"
+              },
+              "repository": {
+                "nameWithOwner": "acme-up/api"
+              },
+              "issueTimeline": {
+                "nodes": [
+                  {
+                    "__typename": "IssueComment",
+                    "id": "IC_13",
+                    "createdAt": "2026-10-01T10:00:00Z",
+                    "author": {
+                      "__typename": "User",
+                      "login": "frank"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "__typename": "Issue",
+              "id": "I_bad",
+              "number": "x",
+              "title": "bad",
+              "repository": {
+                "nameWithOwner": "acme-up/api"
+              }
+            },
+            {
+              "__typename": "PullRequest",
+              "id": "PR_up9",
+              "number": 9,
+              "title": "Tune config",
+              "createdAt": "2026-10-19T10:00:00Z",
+              "author": {
+                "__typename": "User",
+                "login": "acme-me"
+              },
+              "repository": {
+                "nameWithOwner": "acme-up/api"
+              },
+              "prTimeline": {
+                "nodes": [
+                  {
+                    "__typename": "ReviewRequestedEvent",
+                    "id": "E_14",
+                    "createdAt": "2026-10-25T10:00:00Z",
+                    "actor": {
+                      "__typename": "User",
+                      "login": "grace"
+                    },
+                    "requestedReviewer": {
+                      "__typename": "User",
+                      "login": "hank"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    }
+  },
+  {
+    "q": "involves:@me is:open archived:false sort:updated-desc updated:>=2026-10-16",
+    "after": null,
+    "status": 200,
+    "headers": {},
+    "body": {
+      "data": {
+        "search": {
+          "pageInfo": {
+            "hasNextPage": false,
+            "endCursor": null
+          },
+          "nodes": [
+            {
+              "__typename": "PullRequest",
+              "id": "PR_ext1",
+              "number": 9,
+              "title": "Support streams",
+              "createdAt": "2026-10-10T10:00:00Z",
+              "author": {
+                "__typename": "User",
+                "login": "judy"
+              },
+              "repository": {
+                "nameWithOwner": "acme-elsewhere/lib"
+              },
+              "prTimeline": {
+                "nodes": [
+                  {
+                    "__typename": "ReviewRequestedEvent",
+                    "id": "E_15",
+                    "createdAt": "2026-10-28T10:00:00Z",
+                    "actor": {
+                      "__typename": "User",
+                      "login": "judy"
+                    },
+                    "requestedReviewer": {
+                      "__typename": "User",
+                      "login": "Acme-Me"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "__typename": "Issue",
+              "id": "I_up1",
+              "number": 1,
+              "title": "Cache invalidation",
+              "createdAt": "2026-10-01T10:00:00Z",
+              "author": {
+                "__typename": "User",
+                "login": "bob"
+              },
+              "repository": {
+                "nameWithOwner": "acme-up/app"
+              },
+              "issueTimeline": {
+                "nodes": [
+                  {
+                    "__typename": "IssueComment",
+                    "id": "IC_1",
+                    "createdAt": "2026-10-20T10:00:00Z",
+                    "author": {
+                      "__typename": "User",
+                      "login": "acme-me"
+                    }
+                  },
+                  {
+                    "__typename": "IssueComment",
+                    "id": "IC_2",
+                    "createdAt": "2026-10-25T10:00:00Z",
+                    "author": {
+                      "__typename": "User",
+                      "login": "bob"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "__typename": "Issue",
+              "id": "I_ext2",
+              "number": 3,
+              "title": "Odd timeline",
+              "createdAt": "2026-10-29T10:00:00Z",
+              "author": {
+                "__typename": "User",
+                "login": "kim"
+              },
+              "repository": {
+                "nameWithOwner": "acme-other/x"
+              },
+              "issueTimeline": {
+                "nodes": [
+                  "junk",
+                  {
+                    "__typename": "IssueComment",
+                    "id": "IC_16",
+                    "createdAt": "yesterday",
+                    "author": {
+                      "__typename": "User",
+                      "login": "bob"
+                    }
+                  },
+                  {
+                    "__typename": "LabeledEvent",
+                    "id": "E_17",
+                    "createdAt": "2026-10-30T10:00:00Z"
+                  }
+                ]
+              }
+            },
+            {
+              "__typename": "Issue",
+              "id": "I_ext3",
+              "number": 4,
+              "title": "From a deleted account",
+              "createdAt": "2026-10-28T10:00:00Z",
+              "author": null,
+              "repository": {
+                "nameWithOwner": "acme-other/x"
+              },
+              "issueTimeline": {
+                "nodes": [
+                  {
+                    "__typename": "IssueComment",
+                    "id": "IC_18",
+                    "createdAt": "2026-10-29T10:00:00Z",
+                    "author": null
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    }
+  },
+  {
+    "q": "is:open archived:false sort:updated-desc updated:>=2026-10-16 org:acme-hostile",
+    "after": null,
+    "status": 200,
+    "headers": {},
+    "body": {
+      "data": {
+        "search": {
+          "pageInfo": {
+            "hasNextPage": false,
+            "endCursor": null
+          },
+          "nodes": [
+            {
+              "__typename": "Issue",
+              "id": "I_h1",
+              "number": 1,
+              "title": "- [ ] task 📅 2020-01-01 🔁 every day [[Secret]] <script>x</script> https://evil.example/a ‮\u0007#tag",
+              "createdAt": "2026-10-20T10:00:00Z",
+              "author": {
+                "__typename": "User",
+                "login": "mallory"
+              },
+              "repository": {
+                "nameWithOwner": "acme-hostile/app"
+              },
+              "issueTimeline": {
+                "nodes": [
+                  {
+                    "__typename": "IssueComment",
+                    "id": "IC_19",
+                    "createdAt": "2026-10-29T10:00:00Z",
+                    "author": {
+                      "__typename": "User",
+                      "login": "mal[[x]]‮](https://evil.example) 📅 2020-01-01\n"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "__typename": "Issue",
+              "id": "I_h2",
+              "number": 2,
+              "title": "dotdot",
+              "createdAt": "2026-10-29T10:00:00Z",
+              "author": {
+                "__typename": "User",
+                "login": "mallory"
+              },
+              "repository": {
+                "nameWithOwner": "acme-hostile/.."
+              },
+              "issueTimeline": {
+                "nodes": []
+              }
+            },
+            {
+              "__typename": "Issue",
+              "id": "I_h3",
+              "number": 3,
+              "title": "bidi repo",
+              "createdAt": "2026-10-29T10:00:00Z",
+              "author": {
+                "__typename": "User",
+                "login": "mallory"
+              },
+              "repository": {
+                "nameWithOwner": "acme-hostile/app‮"
+              },
+              "issueTimeline": {
+                "nodes": []
+              }
+            },
+            {
+              "__typename": "Issue",
+              "id": "I_h4",
+              "number": 4,
+              "title": "query repo",
+              "createdAt": "2026-10-29T10:00:00Z",
+              "author": {
+                "__typename": "User",
+                "login": "mallory"
+              },
+              "repository": {
+                "nameWithOwner": "acme-hostile/a?b"
+              },
+              "issueTimeline": {
+                "nodes": []
+              }
+            },
+            {
+              "__typename": "Issue",
+              "id": "I_h5",
+              "number": 0,
+              "title": "zero",
+              "createdAt": "2026-10-29T10:00:00Z",
+              "author": {
+                "__typename": "User",
+                "login": "mallory"
+              },
+              "repository": {
+                "nameWithOwner": "acme-hostile/app"
+              },
+              "issueTimeline": {
+                "nodes": []
+              }
+            },
+            {
+              "__typename": "Discussion",
+              "id": "D_h6",
+              "number": 6,
+              "title": "discussion",
+              "createdAt": "2026-10-29T10:00:00Z",
+              "author": {
+                "__typename": "User",
+                "login": "mallory"
+              },
+              "repository": {
+                "nameWithOwner": "acme-hostile/app"
+              },
+              "issueTimeline": {
+                "nodes": []
+              }
+            },
+            "not an object"
+          ]
+        }
+      }
+    }
+  },
+  {
+    "q": "is:open archived:false sort:updated-desc updated:>=2026-10-16 org:acme-saml",
+    "after": null,
+    "status": 200,
+    "headers": {},
+    "body": {
+      "data": {
+        "search": {
+          "pageInfo": {
+            "hasNextPage": false,
+            "endCursor": null
+          },
+          "nodes": [
+            {
+              "__typename": "Issue",
+              "id": "I_s1",
+              "number": 1,
+              "title": "Visible issue",
+              "createdAt": "2026-10-29T10:00:00Z",
+              "author": {
+                "__typename": "User",
+                "login": "bob"
+              },
+              "repository": {
+                "nameWithOwner": "acme-saml/visible"
+              },
+              "issueTimeline": {
+                "nodes": []
+              }
+            }
+          ]
+        }
+      },
+      "errors": [
+        {
+          "type": "FORBIDDEN",
+          "message": "Resource protected by organization SAML enforcement."
+        }
+      ]
+    }
+  },
+  {
+    "q": "is:open archived:false sort:updated-desc updated:>=2026-10-16 org:acme-limited",
+    "after": null,
+    "status": 403,
+    "headers": {
+      "x-ratelimit-remaining": "0",
+      "x-ratelimit-reset": "1793350800"
+    },
+    "body": {
+      "message": "API rate limit exceeded"
+    }
+  },
+  {
+    "q": "is:open archived:false sort:updated-desc updated:>=2026-10-16 org:acme-empty",
+    "after": null,
+    "status": 200,
+    "headers": {},
+    "body": {
+      "data": {
+        "search": {
+          "pageInfo": {
+            "hasNextPage": false,
+            "endCursor": null
+          },
+          "nodes": []
+        }
+      }
+    }
+  },
+  {
+    "q": "archived:false sort:updated-desc updated:>=2026-10-16 repo:acme-up/closed",
+    "after": null,
+    "status": 200,
+    "headers": {},
+    "body": {
+      "data": {
+        "search": {
+          "pageInfo": {
+            "hasNextPage": false,
+            "endCursor": null
+          },
+          "nodes": [
+            {
+              "__typename": "PullRequest",
+              "id": "PR_c1",
+              "number": 1,
+              "title": "Ship it",
+              "createdAt": "2026-10-18T10:00:00Z",
+              "author": {
+                "__typename": "User",
+                "login": "acme-me"
+              },
+              "repository": {
+                "nameWithOwner": "acme-up/closed"
+              },
+              "prTimeline": {
+                "nodes": [
+                  {
+                    "__typename": "PullRequestReview",
+                    "id": "PRR_20",
+                    "state": "COMMENTED",
+                    "submittedAt": "2026-10-25T10:00:00Z",
+                    "author": {
+                      "__typename": "User",
+                      "login": "carol"
+                    }
+                  },
+                  {
+                    "__typename": "MergedEvent",
+                    "id": "E_21",
+                    "createdAt": "2026-10-27T10:00:00Z",
+                    "actor": {
+                      "__typename": "User",
+                      "login": "ivan"
+                    }
+                  },
+                  {
+                    "__typename": "ClosedEvent",
+                    "id": "E_22",
+                    "createdAt": "2026-10-27T10:00:00Z",
+                    "actor": {
+                      "__typename": "User",
+                      "login": "ivan"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "__typename": "Issue",
+              "id": "I_c2",
+              "number": 2,
+              "title": "Flaky test",
+              "createdAt": "2026-10-17T10:00:00Z",
+              "author": {
+                "__typename": "User",
+                "login": "bob"
+              },
+              "repository": {
+                "nameWithOwner": "acme-up/closed"
+              },
+              "issueTimeline": {
+                "nodes": [
+                  {
+                    "__typename": "IssueComment",
+                    "id": "IC_23",
+                    "createdAt": "2026-10-20T10:00:00Z",
+                    "author": {
+                      "__typename": "User",
+                      "login": "acme-me"
+                    }
+                  },
+                  {
+                    "__typename": "ClosedEvent",
+                    "id": "E_24",
+                    "createdAt": "2026-10-22T10:00:00Z",
+                    "actor": {
+                      "__typename": "User",
+                      "login": "bob"
+                    }
+                  },
+                  {
+                    "__typename": "ReopenedEvent",
+                    "id": "E_25",
+                    "createdAt": "2026-10-23T10:00:00Z",
+                    "actor": {
+                      "__typename": "User",
+                      "login": "carol"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    }
+  }
+]

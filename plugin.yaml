@@ -2,10 +2,10 @@
 # checks it is what the SDK writes. When installing, pin runtime.command to an absolute
 # interpreter that has this package (horae-sdk README, "The command").
 name: github
-version: 0.4.0
+version: 0.5.0
 horae: '>=0,<0.2'
 description: GitHub review requests, assignments, mentions and notifications as tasks;
-  failing CI on your repositories and pull requests.
+  failing CI on your repositories and pull requests; what is new for you.
 license: Apache-2.0
 homepage: https://github.com/horae-dev/plugin-github
 provides:
@@ -15,6 +15,7 @@ provides:
   - github.mentions
   - github.notifications
   - github.ci_failures
+  - github.updates
 permissions:
   network:
   - api.github.com

@@ -2,13 +2,13 @@
 
 # plugin-github
 
-Horae plugin: GitHub review requests, assigned issues, mentions and participating notifications as tasks, and which of your repositories has a failing CI.
+Horae plugin: GitHub review requests, assigned issues, mentions and participating notifications as tasks, which of your repositories has a failing CI, and what is new for you since your last action.
 
-> 🚧 **Early.** Review requests, assignments, mentions, participating notifications and CI failures work.
+> 🚧 **Early.** Review requests, assignments, mentions, participating notifications, CI failures and updates work.
 
 ## What it does
 
-Five sources for a pipeline's `collect` step. Three search GitHub (the fourth, notifications, has [its own section](#participating-notifications)) for open items and returns them as data, and proposes one `task.create` intent per item. The fifth, `github.ci_failures`, proposes no task: it lists the repositories and pull requests whose CI fails, and can propose one push per new failure ([CI failures](#ci-failures)). The Horae core validates and applies the intents; the plugin never writes anything.
+Six sources for a pipeline's `collect` step. Three search GitHub (the fourth, notifications, has [its own section](#participating-notifications)) for open items and returns them as data, and proposes one `task.create` intent per item. The fifth, `github.ci_failures`, proposes no task: it lists the repositories and pull requests whose CI fails, and can propose one push per new failure ([CI failures](#ci-failures)). The sixth, `github.updates`, is a to-do of issues and pull requests where someone else did something after your last action ([Updates](#updates-new-for-you)); no task either. The Horae core validates and applies the intents; the plugin never writes anything.
 
 | Source | Finds | Task title | Default due date |
 |---|---|---|---|
@@ -17,6 +17,7 @@ Five sources for a pipeline's `collect` step. Three search GitHub (the fourth, n
 | `github.mentions` | open issues and pull requests that mention you | `Answer mention in owner/repo#42: <title>` | the run's day + 2 days |
 | `github.notifications` | unread notifications you participate in, for pull requests and issues | `Review` / `Work on` / `Answer mention in` / `Follow up on owner/repo#42: <title>` by reason | the run's day + 2 days |
 | `github.ci_failures` | default branches and your own open pull requests whose head commit fails its checks | no task (data, and optionally `notify.push`) | none |
+| `github.updates` | issues and pull requests with activity by someone else since your last action on them | no task (data, and optionally `notify.push`) | none |
 
 ```yaml
 # pipelines/daily-brief.yaml
@@ -222,6 +223,109 @@ steps:
 
 **Cost.** One request per 50 repositories inside the window and per `repos` value, plus one per 50 open pull requests per owner: a few requests every run, well inside GitHub's 5,000 points an hour. A rate limit fails the call at once, with the usual message, never slept through.
 
+### Updates: new for you
+
+`github.updates` answers "what moved since I last looked, or since I last did something?" as a to-do: the issues and pull requests of the owners you follow (and, with `involves_me`, any that involve you) where **someone else** did something **after your last action** on them. Reply, review or push and the item drops out on the next run. It reads, with GraphQL, within one 25 s deadline:
+
+- **You**: `viewer { login }`, one request (the token's account).
+- **Candidates**: one search per `orgs` / `users` / `repos` value, `is:open archived:false sort:updated-desc updated:>=<day − since_days>` (no `is:open` with `include_closed`), and with `involves_me` one more, `involves:@me` with the same qualifiers, anywhere. At most 100 per search (two requests), newest first, merged by node id. `exclude_repos` is added to every search.
+- **The last 25 timeline events** of each: comments, reviews, commits, force pushes, closes, reopens, merges and review requests, with the item's author and creation time.
+
+**New for you.** Your last action is your latest event (a comment, a submitted review, a commit you authored, a force push, a close, a merge, a review request you made), or the item's creation when you opened it. The latest **other** event is the latest one by anyone else, with:
+
+- **bots** left out unless `include_bots`: an actor of type `Bot` (dependabot, renovate, github-actions, any GitHub App) or a login ending in `[bot]`, and a **commit whose author is no GitHub account** (an automation's e-mail, mostly; a person committing from an e-mail not on their account counts as one too);
+- a **review request** counted only when it asks **you** (by name; a request to one of your teams is not counted);
+- a pending (unsubmitted) review never counted; a merge preferred to its close at the same second.
+
+The item is listed when that event is **after** your last action (or you never acted) and on or after the window's first day. So an issue opened in the window by someone else in a followed owner is listed until you act on it; your own pull request is listed when someone reviews, comments or pushes, not before. No state is kept by the plugin: everything comes from GitHub's timeline. When your last action is older than the 25 events read, every other event read is after it, which is what "new" means anyway.
+
+| Parameter | Default | Meaning |
+|---|---|---|
+| `orgs`, `users`, `repos` | none | owners and repositories you follow, one search each (as for the other sources); at least one is required |
+| `exclude_repos` | none | never these repositories (at most 20) |
+| `involves_me` | true | also items anywhere that involve you (`involves:@me`: you opened, were assigned, mentioned or commented) |
+| `since_days` | 14 | look-back window, 0 to 90: only items updated, and events, on or after the run's day minus this |
+| `include_closed` | false | also closed and merged items (a merge or close by someone else is then news) |
+| `include_bots` | false | count bot activity too (above) |
+| `notify` | false | propose one `notify.push` per item (below); the pipeline then needs a `notify` entry |
+| `max_items` | 50 | at most this many items, 1 to 100, newest first (`truncated` past it) |
+| `today`, `timezone` | as above | the run's day, for the window |
+
+**Data.** One item per issue or pull request, newest event first:
+
+```json
+{
+  "kind": "updates",
+  "day": "2026-10-30",
+  "since": "2026-10-16",
+  "items": [
+    {
+      "fingerprint": "github:update:PR_up4:PRR_8",
+      "item_fingerprint": "github:pr:PR_up4",
+      "type": "pr",
+      "repo": "acme-up/app",
+      "number": 4,
+      "item_title": "Add retries",
+      "event": "approved",
+      "by": "carol",
+      "at": "2026-10-26T10:00:00Z",
+      "your_last_action": "2026-10-18T10:00:00Z",
+      "url": "https://github.com/acme-up/app/pull/4",
+      "title": "Add retries — carol approved"
+    }
+  ],
+  "checked": 11,
+  "truncated": false,
+  "filtered": 4,
+  "skipped": 1,
+  "partial": false,
+  "errors": 0
+}
+```
+
+- `event` is one of `opened`, `commented`, `reviewed`, `approved`, `changes_requested`, `pushed`, `merged`, `closed`, `reopened`, `review_requested`; `title` says it in words (`requested changes`, `requested your review`) for a note: `obsidian.render_note` prints `<repo> <number> <title>`, so a line reads `acme-up/app 4 Add retries — carol approved`. `by` is `someone` for a deleted account or a commit without one. `your_last_action` is `null` when you never acted (in the events read).
+- `checked` counts the well-formed items read; `filtered` those with nothing new for you (or excluded); `skipped` malformed answers (not an issue or pull request, a bad number, a repository that cannot be one, a link `is_task_link` refuses). A malformed timeline event is ignored. `truncated`: more than 100 candidates in a search, more than `max_items` new items, or the deadline cut the reads short (the items read so far are returned). `partial` and `errors`: results GitHub hid (`FORBIDDEN`, `NOT_FOUND`, typically an organisation enforcing SAML single sign-on on the token).
+- **Identity**: `fingerprint` is the item's node id and the latest other event's id; `item_fingerprint` is the item's fingerprint in the other search sources (`github:pr:<node id>`), to match a task.
+- **Untrusted text**: titles and logins are chosen by others. They reach the data and the pushes through the SDK's `escape_title` then `plain_text` (control, bidi and zero-width characters removed; titles 150 characters at most, logins 60). They are data: `obsidian.render_note` escapes them again, plugin-ntfy sends plain text. Links are built from the validated repository and the integer number (`https://github.com/<repo>/pull|issues/<n>`), never taken from GitHub. `tests/recordings/updates-hostile.json` shows them neutralised.
+
+**Since the last check** (`notify: true`). One `notify.push` per item, titled `<repo>#<n>: <who> <what>`, the item's title as body, its link, and `key` set to its fingerprint. The core sends a keyed push **once for good** (schemas decision 57, amended), and the key holds the latest other event, so each event is pushed once and newer activity on the same item is pushed again. On the first run every current item is pushed once. Route the pushes as for [CI failures](#ci-failures): one `ntfy.push` entry per owner with its `link_prefix`; an `involves_me` item of an owner no entry covers is not pushed (`intent_skipped`) but stays in the note.
+
+**A note** of what is new: `obsidian.render_note` with a block of its own, rewritten every run (`_None._` when you are up to date). What the note does not show: links (plain escaped bullets), the order (render_note sorts the lines alphabetically, so by repository and number, not by time), the time of the event, and this source's `truncated` / `partial` flags (only the task source's flags become alerts; its `expect` alert fires when the source failed).
+
+Example, [`examples/updates.yaml`](examples/updates.yaml) (every 30 minutes on weekdays, 08:00 to 20:30, no LLM):
+
+```yaml
+name: github-updates
+trigger: { cron: "*/30 8-20 * * 1-5" }
+steps:
+  - collect:
+      - github.updates: { orgs: [Acme-Org], users: [ada], today: "{{date}}", notify: true }
+  - transform:
+      - obsidian.render_note:
+          today: "{{date}}"
+          block: github-updates
+          expect: [github.updates]
+          template: |
+            # GitHub: new for you
+
+            Updated ${date}.
+
+            ## Alerts
+
+            ${alerts}
+
+            ## New since your last action
+
+            ${github}
+  - act:
+      - obsidian.write_note: { path: "Horae/GitHub.assistant.md", mode: replace-owned }
+  - notify:
+      - ntfy.push: { server: https://ntfy.invalid, topic: CHANGE-ME, link_prefix: "https://github.com/Acme-Org/", dedupe: off }
+      - ntfy.push: { server: https://ntfy.invalid, topic: CHANGE-ME, link_prefix: "https://github.com/ada/", dedupe: off }
+```
+
+**Cost.** One request for you, then one per 50 candidates per search (two at most per search, nine searches at most), each a search with 25 timeline events per item: a few points per run, well inside GitHub's 5,000 points an hour. A rate limit fails the call at once, never slept through.
+
 ### One task per item
 
 The fingerprint is the item's identity, not the kind that found it: `github:pr:<node id>` or `github:issue:<node id>`, from GitHub's global node id, which does not change when the item is renamed or edited. When the node id is missing or malformed, it falls back to the repository and number, `github:pr:<owner>-<repo>:<number>::<digest>` (for example `github:pr:acme-org-api:42::f93d83b33a08d274`; the SDK's `intents.fingerprint` replaces `/` and adds a digest of the raw parts). An issue **transferred** to another repository gets a new node id on GitHub, so it becomes a new task; the old one is not closed by the plugin.
@@ -239,7 +343,7 @@ Titles reach a task only through the SDK's `intents.task_create`, which escapes 
 ## Install and configure
 
 ```
-horae plugin add github@0.4.0
+horae plugin add github@0.5.0
 ```
 
 Pin `runtime.command` to an absolute interpreter that has this package (the host's `PATH` is fixed and its working directory is empty), for example `/opt/plugins/github/.venv/bin/python -m horae_github`.
@@ -267,6 +371,8 @@ Store it as the instance secret `GITHUB_TOKEN` (`/run/secrets/GITHUB_TOKEN` by d
 | `Actions: Read` | the workflow run behind a check run (name and run link) |
 | `Pull requests: Read` | the search for your open pull requests (already needed) |
 
+**For `github.updates`**: `Metadata`, `Issues` and `Pull requests` read-only (as the search sources), plus `Contents: Read` for the commits of a pull request's timeline (their author) on private repositories. Nothing else, no write; `viewer { login }` needs no extra permission. The same `GITHUB_TOKEN` serves every source.
+
 Check runs are a gap in GitHub's documentation: the `Checks` permission exists only for GitHub Apps, and no fine-grained personal access token permission is documented for reading check runs. On **public** repositories every token reads them. On a **private** repository this was **not verified** with a fine-grained token: check once that a failing workflow on one of them shows up (with its name in `checks`). If it does not, the token cannot see that repository's check runs; a classic token with the `repo` scope can, but it grants write access to every repository, so prefer keeping such repositories public or watching them another way. A fine-grained token sees the private repositories of **one** resource owner (your account, or one organisation that approved it) and every public repository; `GITHUB_TOKEN` is one secret, so watch public repositories of other owners, or the private ones of the token's owner.
 
 ## Permissions
@@ -276,7 +382,7 @@ Matches `plugin.yaml` exactly.
 | Kind | Value | Why |
 |---|---|---|
 | intent | `task.create` | one task per item |
-| intent | `notify.push` | `github.ci_failures` with `notify: true`: one push per new failure |
+| intent | `notify.push` | `github.ci_failures` and `github.updates` with `notify: true`: one push per new failure or update |
 | network | `api.github.com` | the GraphQL API (`POST /graphql`) and `GET /notifications`, the only host contacted |
 | secret | `GITHUB_TOKEN` | read-only fine-grained token, above |
 | secret | `GITHUB_NOTIFICATIONS_TOKEN` | classic token, `notifications` scope only, for `github.notifications` |
@@ -291,6 +397,7 @@ Matches `plugin.yaml` exactly.
 | `github.mentions` | `GITHUB_TOKEN` | fine-grained PAT | same | `POST /graphql` (search) |
 | `github.notifications` | `GITHUB_NOTIFICATIONS_TOKEN` | classic PAT | `notifications` only | `GET /notifications` (never marks anything read) |
 | `github.ci_failures` | `GITHUB_TOKEN` | fine-grained PAT | `Metadata`, `Contents`, `Commit statuses`, `Actions`, `Pull requests`: Read | `POST /graphql` (`repositoryOwner`, `repository`, search) |
+| `github.updates` | `GITHUB_TOKEN` | fine-grained PAT | `Metadata`, `Issues`, `Pull requests`, `Contents`: Read | `POST /graphql` (`viewer`, search with timelines) |
 
 **`GITHUB_NOTIFICATIONS_TOKEN` is optional.** Declared in `permissions.optional_secrets`, it is injected only when it resolves, so you create the classic `notifications` token only if you use `github.notifications`; without it that source fails with `secret_missing: GITHUB_NOTIFICATIONS_TOKEN is not set`. The search sources always need `GITHUB_TOKEN`. Optional secrets need a core with decision 56 (unreleased 0.0.x); the manifest's `horae:` range stays `>=0,<0.2`, but an older core rejects `optional_secrets`.
 
@@ -319,6 +426,7 @@ Each source either returns its data (flagged `truncated` or `partial` when some 
 | `github: service unavailable (HTTP 503)` | a gateway error, twice |
 | `github: request timed out`, `github: connection failed (...)`, `github: response too large`, `github: malformed response`, `github: unexpected ...` | network or protocol trouble |
 | `github: no owner or repository could be read` | `github.ci_failures`: GitHub returned nothing for every `orgs`, `users` and `repos` value (misspelt, or hidden by SAML) |
+| `github: updates needs orgs, users or repos`, `github: since_days is 0 to 90` | a bad `github.updates` parameter |
 | `github: ci_failures needs orgs, users or repos`, `github: pushed_within_days is 0 to 365`, `github: max_items is 1 to 100` | a bad `github.ci_failures` parameter |
 | `github: invalid reasons filter`, `github: since must be YYYY-MM-DDTHH:MM:SSZ`, `github: invalid org filter`, `github: at most 8 orgs, users and repos values in all (one search each)`, `github: max_items is 1 to 200`, `github: due offsets are 0 to 365 days`, `github: today must be YYYY-MM-DD`, `github: unknown time zone` | a bad pipeline parameter |
 

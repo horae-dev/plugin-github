@@ -30,6 +30,10 @@ matches any of the values. `exclude_repos` applies to every search.
   have a failing CI (see `ci.py`). It proposes no task: data for a note, and with `notify`
   one `notify.push` per failure, keyed on its fingerprint so the core sends it once.
 
+- `github.updates`: issues and pull requests with activity by someone else since your last
+  action on them (see `updates.py`). No task: data for a note, and with `notify` one keyed
+  `notify.push` per new event.
+
 The tokens are declared secrets, read at call time; they never appear in data, intents, errors
 or logs.
 """
@@ -38,13 +42,13 @@ import os
 import re
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from typing import Any
 
 from horae_sdk import Call, Output, Permissions, Plugin, PluginError, intents, tasks
 from horae_sdk.tasks import is_task_link
 
-from horae_github import ci, due
+from horae_github import ci, due, updates
 from horae_github.client import RETURNED_REPO_RE, Client, GitHubError
 from horae_github.http import HOST, Transport
 from horae_github.notifications import SECRET as NOTIFICATIONS_SECRET
@@ -53,7 +57,7 @@ from horae_github.notifications import NotificationsClient
 NAME = "github"
 """The plugin's name, also the namespace of its refs (`github.review_requests`) and
 fingerprints (`github:pr:<node id>`)."""
-VERSION = "0.4.0"
+VERSION = "0.5.0"
 COMMAND = ["python3", "-m", "horae_github"]
 """`runtime.command` of `plugin.yaml`. When installing, pin an absolute interpreter that has
 this package (the host's `PATH` is fixed and its working directory empty)."""
@@ -321,7 +325,7 @@ def build(
         permissions=PERMISSIONS,
         description=(
             "GitHub review requests, assignments, mentions and notifications as tasks; "
-            "failing CI on your repositories and pull requests."
+            "failing CI on your repositories and pull requests; what is new for you."
         ),
     )
 
@@ -683,6 +687,90 @@ def build(
                 "errors": walk.errors + walk.missing,
             },
             intents=[failure.push() for failure in kept] if notify else [],
+        )
+
+    @plugin.source(f"{NAME}.updates")
+    def updates_(
+        call: Call,
+        orgs: list[str] | None = None,
+        users: list[str] | None = None,
+        repos: list[str] | None = None,
+        exclude_repos: list[str] | None = None,
+        involves_me: bool = True,
+        since_days: int = 14,
+        include_closed: bool = False,
+        include_bots: bool = False,
+        notify: bool = False,
+        max_items: int = 50,
+        today: str | None = None,
+        timezone: str | None = None,
+    ) -> Output:
+        """Issues and pull requests of `orgs` / `users` / `repos` (and, with `involves_me`,
+        any that involve you) where someone else did something (commented, reviewed, pushed,
+        merged, closed, reopened, asked your review, opened) after your last action on them,
+        in the last `since_days` days. Bots are left out unless `include_bots`; closed items
+        unless `include_closed`. With `notify`, one `notify.push` per item, keyed on the item
+        and its latest event: the core sends each key once."""
+        if type(max_items) is not int or not 1 <= max_items <= updates.MAX_ITEMS:
+            raise PluginError(f"github: max_items is 1 to {updates.MAX_ITEMS}")
+        window = updates.check_window(since_days)
+        if not orgs and not users and not repos:
+            raise PluginError("github: updates needs orgs, users or repos")
+        try:
+            day = due.run_day(today, timezone, environ, clock)
+        except due.DueError as error:
+            raise PluginError(str(error)) from None
+        cutoff = day - timedelta(days=window)
+        qualifiers = f"archived:false sort:updated-desc updated:>={cutoff.isoformat()}"
+        if not include_closed:
+            qualifiers = f"is:open {qualifiers}"
+        kind = Kind("updates", "updates", qualifiers, "", "")
+        queries = search_queries(
+            kind,
+            orgs=orgs or [],
+            users=users or [],
+            repos=repos or [],
+            exclude_repos=exclude_repos or [],
+            skip_covered=False,
+        )
+        if involves_me:
+            mine = Kind("updates", "updates", f"involves:@me {qualifiers}", "", "")
+            queries += search_queries(
+                mine,
+                orgs=[],
+                users=[],
+                repos=[],
+                exclude_repos=exclude_repos or [],
+                skip_covered=False,
+            )
+        token = environ.get(SECRET)
+        if not token:
+            raise PluginError(f"github: {SECRET} is not set")
+        try:
+            found = updates.collect(
+                client(token),
+                queries,
+                excluded=frozenset(v.lower() for v in exclude_repos or []),
+                cutoff=cutoff,
+                include_bots=include_bots,
+            )
+        except GitHubError as error:
+            raise PluginError(str(error)) from None
+        kept = found.updates[:max_items]
+        return Output(
+            {
+                "kind": "updates",
+                "day": day.isoformat(),
+                "since": cutoff.isoformat(),
+                "items": [item.data() for item in kept],
+                "checked": found.checked,
+                "truncated": found.truncated or len(found.updates) > max_items,
+                "filtered": found.filtered,
+                "skipped": found.skipped,
+                "partial": found.errors > 0,
+                "errors": found.errors,
+            },
+            intents=[item.push() for item in kept] if notify else [],
         )
 
     return plugin

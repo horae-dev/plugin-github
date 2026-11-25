@@ -1,0 +1,13 @@
+{
+  "tool": "github.updates",
+  "params": {
+    "orgs": [
+      "acme-up"
+    ],
+    "since_days": 91,
+    "today": "2026-10-30"
+  },
+  "expect": {
+    "error": "github: since_days is 0 to 90"
+  }
+}
