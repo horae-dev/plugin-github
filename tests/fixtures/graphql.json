@@ -305,7 +305,7 @@
     }
   },
   {
-    "q": "is:open archived:false assignee:@me -review-requested:@me",
+    "q": "is:issue is:open archived:false assignee:@me -review-requested:@me",
     "after": null,
     "status": 200,
     "headers": {},
@@ -328,7 +328,25 @@
               "milestone": {
                 "dueOn": "2026-11-06T07:00:00Z"
               }
-            },
+            }
+          ]
+        }
+      }
+    }
+  },
+  {
+    "q": "is:pr is:open archived:false assignee:@me -review-requested:@me",
+    "after": null,
+    "status": 200,
+    "headers": {},
+    "body": {
+      "data": {
+        "search": {
+          "pageInfo": {
+            "hasNextPage": false,
+            "endCursor": null
+          },
+          "nodes": [
             {
               "__typename": "PullRequest",
               "id": "PR_kwDOSYNTH0012",
@@ -345,7 +363,37 @@
     }
   },
   {
-    "q": "is:open archived:false assignee:@me",
+    "q": "is:issue is:open archived:false assignee:@me",
+    "after": null,
+    "status": 200,
+    "headers": {},
+    "body": {
+      "data": {
+        "search": {
+          "pageInfo": {
+            "hasNextPage": false,
+            "endCursor": null
+          },
+          "nodes": [
+            {
+              "__typename": "Issue",
+              "id": "I_kwDOSYNTH0011",
+              "number": 11,
+              "title": "Document the export format",
+              "repository": {
+                "nameWithOwner": "acme-org/api"
+              },
+              "milestone": {
+                "dueOn": "2026-11-06T07:00:00Z"
+              }
+            }
+          ]
+        }
+      }
+    }
+  },
+  {
+    "q": "is:pr is:open archived:false assignee:@me",
     "after": null,
     "status": 200,
     "headers": {},
@@ -368,18 +416,6 @@
               "milestone": null
             },
             {
-              "__typename": "Issue",
-              "id": "I_kwDOSYNTH0011",
-              "number": 11,
-              "title": "Document the export format",
-              "repository": {
-                "nameWithOwner": "acme-org/api"
-              },
-              "milestone": {
-                "dueOn": "2026-11-06T07:00:00Z"
-              }
-            },
-            {
               "__typename": "PullRequest",
               "id": "PR_kwDOSYNTH0012",
               "number": 12,
@@ -395,7 +431,37 @@
     }
   },
   {
-    "q": "is:open archived:false assignee:@me org:acme-org",
+    "q": "is:issue is:open archived:false assignee:@me org:acme-org",
+    "after": null,
+    "status": 200,
+    "headers": {},
+    "body": {
+      "data": {
+        "search": {
+          "pageInfo": {
+            "hasNextPage": false,
+            "endCursor": null
+          },
+          "nodes": [
+            {
+              "__typename": "Issue",
+              "id": "I_kwDOSYNTH0011",
+              "number": 11,
+              "title": "Document the export format",
+              "repository": {
+                "nameWithOwner": "acme-org/api"
+              },
+              "milestone": {
+                "dueOn": "2026-11-06T07:00:00Z"
+              }
+            }
+          ]
+        }
+      }
+    }
+  },
+  {
+    "q": "is:pr is:open archived:false assignee:@me org:acme-org",
     "after": null,
     "status": 200,
     "headers": {},
@@ -416,18 +482,6 @@
                 "nameWithOwner": "acme-org/widgets"
               },
               "milestone": null
-            },
-            {
-              "__typename": "Issue",
-              "id": "I_kwDOSYNTH0011",
-              "number": 11,
-              "title": "Document the export format",
-              "repository": {
-                "nameWithOwner": "acme-org/api"
-              },
-              "milestone": {
-                "dueOn": "2026-11-06T07:00:00Z"
-              }
             }
           ]
         }
@@ -435,7 +489,7 @@
     }
   },
   {
-    "q": "is:open archived:false mentions:@me -assignee:@me -review-requested:@me",
+    "q": "is:issue is:open archived:false mentions:@me -assignee:@me -review-requested:@me",
     "after": null,
     "status": 200,
     "headers": {},
@@ -463,7 +517,24 @@
     }
   },
   {
-    "q": "is:open archived:false mentions:@me",
+    "q": "is:pr is:open archived:false mentions:@me -assignee:@me -review-requested:@me",
+    "after": null,
+    "status": 200,
+    "headers": {},
+    "body": {
+      "data": {
+        "search": {
+          "pageInfo": {
+            "hasNextPage": false,
+            "endCursor": null
+          },
+          "nodes": []
+        }
+      }
+    }
+  },
+  {
+    "q": "is:issue is:open archived:false mentions:@me",
     "after": null,
     "status": 200,
     "headers": {},
@@ -498,6 +569,23 @@
               }
             }
           ]
+        }
+      }
+    }
+  },
+  {
+    "q": "is:pr is:open archived:false mentions:@me",
+    "after": null,
+    "status": 200,
+    "headers": {},
+    "body": {
+      "data": {
+        "search": {
+          "pageInfo": {
+            "hasNextPage": false,
+            "endCursor": null
+          },
+          "nodes": []
         }
       }
     }

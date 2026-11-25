@@ -21,6 +21,12 @@ default) `github.assigned` also leaves out what `github.review_requests` returns
 `MAX_SEARCHES` per call), and the results are merged, each node once: an item matches when it
 matches any of the values. `exclude_repos` applies to every search.
 
+**Issues and pull requests are searched apart.** A query with neither `is:issue` nor `is:pr`
+returns nothing, silently, for a fine-grained token (REST: 422), so assigned, mentions and
+updates search each value twice, `is:issue` and `is:pr` (at most `2 * MAX_SEARCHES` searches
+per call, `ceil(max_items / 50)` requests each, all within the one call deadline), merged by
+node id; review requests and CI pull requests are `is:pr` already.
+
 - `github.notifications`: unread notifications you participate in (REST, read only, a classic
   token in its own secret `GITHUB_NOTIFICATIONS_TOKEN`; see `notifications.py`). The API gives
   no node id, so its fingerprint is the repository-and-number fallback and does **not** collapse
@@ -57,7 +63,7 @@ from horae_github.notifications import NotificationsClient
 NAME = "github"
 """The plugin's name, also the namespace of its refs (`github.review_requests`) and
 fingerprints (`github:pr:<node id>`)."""
-VERSION = "0.5.0"
+VERSION = "0.5.1"
 COMMAND = ["python3", "-m", "horae_github"]
 """`runtime.command` of `plugin.yaml`. When installing, pin an absolute interpreter that has
 this package (the host's `PATH` is fixed and its working directory empty)."""
@@ -180,6 +186,10 @@ def search_queries(
     """The search strings: the kind's qualifiers, then one `org:`, `user:` or `repo:` value
     per search (one search without any), then every `-repo:` exclusion.
 
+    GitHub's search silently returns nothing for a fine-grained token when a query has neither
+    `is:issue` nor `is:pr` (REST answers 422): a kind that matches both gets two searches per
+    scope, one `is:issue` and one `is:pr` (merged by node id); a kind with either keeps one.
+
     One value per search because GitHub ANDs qualifiers of different kinds (`org:a repo:b/c`
     matches nothing outside `a`): searches run separately and merged mean "any of them"."""
     query = kind.query
@@ -203,7 +213,12 @@ def search_queries(
         raise PluginError(
             f"github: at most {MAX_SEARCHES} orgs, users and repos values in all (one search each)"
         )
-    return [" ".join([*head, *scope, *excluded]) for scope in ([[s] for s in scopes] or [[]])]
+    split = not {"is:issue", "is:pr"} & set(query.split())
+    return [
+        " ".join([*([kind_] if kind_ else []), *head, *scope, *excluded])
+        for scope in ([[s] for s in scopes] or [[]])
+        for kind_ in (("is:issue", "is:pr") if split else ("",))
+    ]
 
 
 def _checked(value: object, pattern: re.Pattern[str], name: str) -> str:

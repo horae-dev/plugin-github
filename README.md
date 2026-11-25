@@ -61,7 +61,7 @@ The three search sources take:
 | `today` | the clock | the run's day, `YYYY-MM-DD`. Pass `"{{date}}"`: the due dates then depend only on the run, so a replay gives the same tasks |
 | `timezone` | the instance's | an IANA time zone, used only when `today` is not given |
 
-**Filters are "any of".** GitHub ANDs qualifiers of different kinds (`org:acme repo:other/api` matches nothing), so the plugin runs **one search per `orgs`, `users` or `repos` value** and merges the results, each item once (by node id): an item is returned when it matches any value. `exclude_repos` is added to every search. At most 8 `orgs`, `users` and `repos` values in all (8 searches); more is refused with `github: at most 8 orgs, users and repos values in all (one search each)`. Without any of them there is one search. Each value is checked, whole, against GitHub's name rules (logins: letters, digits, `-` and `_` for Enterprise Managed Users), so a filter cannot add a qualifier of its own.
+**Filters are "any of".** GitHub ANDs qualifiers of different kinds (`org:acme repo:other/api` matches nothing), so the plugin runs **one search per `orgs`, `users` or `repos` value** and merges the results, each item once (by node id): an item is returned when it matches any value. `exclude_repos` is added to every search. At most 8 `orgs`, `users` and `repos` values in all (16 searches at most, see below); more is refused with `github: at most 8 orgs, users and repos values in all (one search each)`. Without any of them there is one search. **Issues and pull requests are searched apart:** GitHub's search returns nothing, silently, for a fine-grained token when a query has neither `is:issue` nor `is:pr` (REST answers 422), so `github.assigned`, `github.mentions` and `github.updates` run each search twice, once with `is:issue` and once with `is:pr`, merged by node id; `github.review_requests` and the pull request search of `github.ci_failures` are pull-request-only (`is:pr`) and stay one search per value. `max_items` and `truncated` apply to the merged result. Each value is checked, whole, against GitHub's name rules (logins: letters, digits, `-` and `_` for Enterprise Managed Users), so a filter cannot add a qualifier of its own.
 
 Draft pull requests are included (no `draft:` qualifier): a draft assigned to you or with a review requested is still work.
 
@@ -217,8 +217,8 @@ steps:
   - act:
       - obsidian.write_note: { path: "Horae/CI.assistant.md", mode: replace-owned }
   - notify:
-      - ntfy.push: { server: https://ntfy.invalid, topic: CHANGE-ME, link_prefix: "https://github.com/Acme-Org/", dedupe: off }
-      - ntfy.push: { server: https://ntfy.invalid, topic: CHANGE-ME, link_prefix: "https://github.com/ada/", dedupe: off }
+      - ntfy.push: { server: https://ntfy.invalid, topic: CHANGE-ME, link_prefix: "https://github.com/Acme-Org/", dedupe: "off" }
+      - ntfy.push: { server: https://ntfy.invalid, topic: CHANGE-ME, link_prefix: "https://github.com/ada/", dedupe: "off" }
 ```
 
 **Cost.** One request per 50 repositories inside the window and per `repos` value, plus one per 50 open pull requests per owner: a few requests every run, well inside GitHub's 5,000 points an hour. A rate limit fails the call at once, with the usual message, never slept through.
@@ -320,11 +320,11 @@ steps:
   - act:
       - obsidian.write_note: { path: "Horae/GitHub.assistant.md", mode: replace-owned }
   - notify:
-      - ntfy.push: { server: https://ntfy.invalid, topic: CHANGE-ME, link_prefix: "https://github.com/Acme-Org/", dedupe: off }
-      - ntfy.push: { server: https://ntfy.invalid, topic: CHANGE-ME, link_prefix: "https://github.com/ada/", dedupe: off }
+      - ntfy.push: { server: https://ntfy.invalid, topic: CHANGE-ME, link_prefix: "https://github.com/Acme-Org/", dedupe: "off" }
+      - ntfy.push: { server: https://ntfy.invalid, topic: CHANGE-ME, link_prefix: "https://github.com/ada/", dedupe: "off" }
 ```
 
-**Cost.** One request for you, then one per 50 candidates per search (two at most per search, nine searches at most), each a search with 25 timeline events per item: a few points per run, well inside GitHub's 5,000 points an hour. A rate limit fails the call at once, never slept through.
+**Cost.** One request for you, then one per 50 candidates per search (two at most per search, eighteen searches at most: eight values and `involves:@me`, each as an `is:issue` and an `is:pr` search), each a search with 25 timeline events per item: a few points per run, well inside GitHub's 5,000 points an hour. A rate limit fails the call at once, never slept through.
 
 ### One task per item
 
@@ -343,7 +343,7 @@ Titles reach a task only through the SDK's `intents.task_create`, which escapes 
 ## Install and configure
 
 ```
-horae plugin add github@0.5.0
+horae plugin add github@0.5.1
 ```
 
 Pin `runtime.command` to an absolute interpreter that has this package (the host's `PATH` is fixed and its working directory is empty), for example `/opt/plugins/github/.venv/bin/python -m horae_github`.
@@ -405,7 +405,7 @@ Matches `plugin.yaml` exactly.
 
 **GraphQL search, not REST.** Each kind is a search qualifier (`review-requested:@me`, `assignee:@me`, `mentions:@me`), and one GraphQL `search` returns exactly the fields a task needs (node id, number, title, repository, milestone due date) for issues and pull requests, 50 per request. REST `/search/issues` needs as many calls, has its own 30-per-minute search budget, and returns whole user and label objects to drop.
 
-- **Bounded**: at most `ceil(max_items / 50)` requests per search (4 at most) and 8 searches per call; **one 25 s deadline per call** (under the host's 30 s call timeout) across every page and retry; 10 s per socket operation, never more than the time left; 4 MiB per answer. The body is read with `read1` (one `recv` at a time) and a watchdog shuts the socket down at the deadline, so an answer dripped byte by byte, headers or body, cannot keep the call open. The host name is resolved in a thread waited for at most the time left; if resolution hangs, that thread is abandoned (it holds no socket) and the call fails with `request timed out`. Out of time after at least one page: the items fetched so far, `truncated: true`.
+- **Bounded**: at most `ceil(max_items / 50)` requests per search (4 at most) and 16 searches per call (8 values, each an `is:issue` and an `is:pr` search; 8 for `github.review_requests`); **one 25 s deadline per call** (under the host's 30 s call timeout) across every page and retry; 10 s per socket operation, never more than the time left; 4 MiB per answer. The body is read with `read1` (one `recv` at a time) and a watchdog shuts the socket down at the deadline, so an answer dripped byte by byte, headers or body, cannot keep the call open. The host name is resolved in a thread waited for at most the time left; if resolution hangs, that thread is abandoned (it holds no socket) and the call fails with `request timed out`. Out of time after at least one page: the items fetched so far, `truncated: true`.
 - **No ambient proxy, https only, no redirect**: `http.client` with a verifying TLS context, which never reads `HTTPS_PROXY` or `.netrc`. A 3xx is refused, never followed.
 - **No long waits**: a rate limit is reported at once, never slept through. A gateway error (502, 503, 504) is retried once after 1 s, when the deadline leaves room.
 - **Direct connections today.** The plugin connects to `api.github.com` itself. From milestone M5 the core's egress proxy becomes the network for isolated plugins; this plugin will need to use the proxy the host provides once M5 defines how (a follow-up, not done here).

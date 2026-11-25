@@ -5,7 +5,9 @@ All GraphQL, within one call deadline (`Client.deadline`):
 
 - **Who you are**: `viewer { login }` (one request).
 - **Candidates**: one search per `orgs` / `users` / `repos` value (`search_queries`), plus one
-  `involves:@me` search anywhere (`involves_me`), each `archived:false updated:>=<cutoff>
+  `involves:@me` search anywhere (`involves_me`), each run as an `is:issue` and an `is:pr`
+  search (GitHub returns nothing for a fine-grained token without one of them: up to 18
+  searches, 36 requests, within the call deadline), each `archived:false updated:>=<cutoff>
   sort:updated-desc` (and `is:open` unless `include_closed`), at most `MAX_SEARCH_RESULTS`
   per search, merged by node id. Each node comes with its author, creation time and the last
   `TIMELINE_ITEMS` events of its timeline: comments, reviews, commits, force pushes, closes,

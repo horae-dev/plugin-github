@@ -46,10 +46,10 @@ steps:
           topic: CHANGE-ME
           tags: [rotating_light]
           link_prefix: "https://github.com/Acme-Org/"
-          dedupe: off            # keyed pushes: the core deduplicates, no ntfy state needed
+          dedupe: "off"            # keyed pushes: the core deduplicates, no ntfy state needed
       - ntfy.push:
           server: https://ntfy.invalid
           topic: CHANGE-ME
           tags: [rotating_light]
           link_prefix: "https://github.com/ada/"
-          dedupe: off
+          dedupe: "off"
