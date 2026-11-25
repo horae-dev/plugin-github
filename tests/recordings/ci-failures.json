@@ -30,7 +30,7 @@
           "checks_hidden": false,
           "since": "2026-10-30",
           "url": "https://github.com/acme-org/api/actions/runs/9001",
-          "title": "main: Nightly / build, Nightly / test failing since 2026-10-30 (9c13c49)"
+          "title": "main: Nightly / build, Nightly / test failing, head commit of 2026-10-30 (9c13c49)"
         },
         {
           "fingerprint": "github:ci:acme-org-api:pr-12:19bd293ab160626a19e4ba7c4b1b314fbbc01191::29340806f9fd465b",
@@ -46,7 +46,7 @@
           "checks_hidden": false,
           "since": "2026-10-29",
           "url": "https://github.com/acme-org/api/actions/runs/9100",
-          "title": "pull request on feature/cache: Nightly / unit failing since 2026-10-29 (19bd293)"
+          "title": "pull request on feature/cache: Nightly / unit failing, head commit of 2026-10-29 (19bd293)"
         },
         {
           "fingerprint": "github:ci:acme-org-docs:branch-trunk:1eb974a68bff655ca4a96d8278301e0e1e125494::16848842573f17ca",
@@ -62,7 +62,7 @@
           "checks_hidden": false,
           "since": "2026-10-19",
           "url": "https://github.com/acme-org/docs/commit/1eb974a68bff655ca4a96d8278301e0e1e125494",
-          "title": "trunk: ci/external failing since 2026-10-19 (1eb974a)"
+          "title": "trunk: ci/external failing, head commit of 2026-10-19 (1eb974a)"
         },
         {
           "fingerprint": "github:ci:acme-user-dotfiles:branch-main:c4e9075f8417cda895e7a4748e7d2b21317ab043::c00fc88c77e5dbdb",
@@ -78,7 +78,7 @@
           "checks_hidden": false,
           "since": "2026-10-25",
           "url": "https://github.com/acme-user/dotfiles/actions/runs/77",
-          "title": "main: Lint (59 checks not read) failing since 2026-10-25 (c4e9075)"
+          "title": "main: Lint (59 checks not read) failing, head commit of 2026-10-25 (c4e9075)"
         },
         {
           "fingerprint": "github:ci:acme-user-dotfiles:pr-3:58dc9e02ced28bae38b2251bacff9aec6eaee672::277b6546e16d7e34",
@@ -94,7 +94,7 @@
           "checks_hidden": false,
           "since": "2026-10-29",
           "url": "https://github.com/acme-user/dotfiles/pull/3",
-          "title": "pull request on auto-backup/2026-10-29: Auto-merge failing since 2026-10-29 (58dc9e0)"
+          "title": "pull request on auto-backup/2026-10-29: Auto-merge failing, head commit of 2026-10-29 (58dc9e0)"
         }
       ],
       "checked": 9,
@@ -103,40 +103,41 @@
       "skipped": 0,
       "partial": false,
       "errors": 0,
-      "hidden": []
+      "hidden": [],
+      "notify_skipped": 0
     },
     "intents": [
       {
         "type": "notify.push",
-        "body": "Nightly / build, Nightly / test failed on 9c13c49 (2026-10-30).",
+        "body": "Nightly / build, Nightly / test failed on 9c13c49 (head commit of 2026-10-30).",
         "title": "CI failing: acme-org/api main",
         "link": "https://github.com/acme-org/api/actions/runs/9001",
         "key": "github:ci:acme-org-api:branch-main:9c13c49ba052aba9eaeb62c1804d5afae10d4ad7::8856c4734226bbbb"
       },
       {
         "type": "notify.push",
-        "body": "Nightly / unit failed on 19bd293 (2026-10-29).",
+        "body": "Nightly / unit failed on 19bd293 (head commit of 2026-10-29).",
         "title": "CI failing: acme-org/api #12 (feature/cache)",
         "link": "https://github.com/acme-org/api/actions/runs/9100",
         "key": "github:ci:acme-org-api:pr-12:19bd293ab160626a19e4ba7c4b1b314fbbc01191::29340806f9fd465b"
       },
       {
         "type": "notify.push",
-        "body": "ci/external failed on 1eb974a (2026-10-19).",
+        "body": "ci/external failed on 1eb974a (head commit of 2026-10-19).",
         "title": "CI failing: acme-org/docs trunk",
         "link": "https://github.com/acme-org/docs/commit/1eb974a68bff655ca4a96d8278301e0e1e125494",
         "key": "github:ci:acme-org-docs:branch-trunk:1eb974a68bff655ca4a96d8278301e0e1e125494::16848842573f17ca"
       },
       {
         "type": "notify.push",
-        "body": "Lint (59 checks not read) failed on c4e9075 (2026-10-25).",
+        "body": "Lint (59 checks not read) failed on c4e9075 (head commit of 2026-10-25).",
         "title": "CI failing: acme-user/dotfiles main",
         "link": "https://github.com/acme-user/dotfiles/actions/runs/77",
         "key": "github:ci:acme-user-dotfiles:branch-main:c4e9075f8417cda895e7a4748e7d2b21317ab043::c00fc88c77e5dbdb"
       },
       {
         "type": "notify.push",
-        "body": "Auto-merge failed on 58dc9e0 (2026-10-29).",
+        "body": "Auto-merge failed on 58dc9e0 (head commit of 2026-10-29).",
         "title": "CI failing: acme-user/dotfiles #3 (auto-backup/2026-10-29)",
         "link": "https://github.com/acme-user/dotfiles/pull/3",
         "key": "github:ci:acme-user-dotfiles:pr-3:58dc9e02ced28bae38b2251bacff9aec6eaee672::277b6546e16d7e34"

@@ -118,7 +118,8 @@
       "skipped": 1,
       "partial": false,
       "errors": 0,
-      "hidden": []
+      "hidden": [],
+      "notify_skipped": 0
     },
     "intents": [
       {

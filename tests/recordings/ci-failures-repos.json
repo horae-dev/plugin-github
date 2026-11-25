@@ -28,7 +28,7 @@
           "checks_hidden": false,
           "since": "2026-10-30",
           "url": "https://github.com/acme-org/single/actions/runs/5",
-          "title": "main: Nightly / e2e failing since 2026-10-30 (889fbb4)"
+          "title": "main: Nightly / e2e failing, head commit of 2026-10-30 (889fbb4)"
         }
       ],
       "checked": 1,
@@ -37,12 +37,13 @@
       "skipped": 0,
       "partial": true,
       "errors": 1,
-      "hidden": []
+      "hidden": [],
+      "notify_skipped": 0
     },
     "intents": [
       {
         "type": "notify.push",
-        "body": "Nightly / e2e failed on 889fbb4 (2026-10-30).",
+        "body": "Nightly / e2e failed on 889fbb4 (head commit of 2026-10-30).",
         "title": "CI failing: acme-org/single main",
         "link": "https://github.com/acme-org/single/actions/runs/5",
         "key": "github:ci:acme-org-single:branch-main:889fbb4683139946c00aee26dd08bff65d50dbf4::7515cc739156d326"

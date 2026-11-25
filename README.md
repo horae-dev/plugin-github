@@ -145,6 +145,7 @@ A **failure** is a head commit whose combined state is `FAILURE` or `ERROR`. `PE
 | `include_my_prs` | true | also your own open pull requests whose head fails |
 | `include_forks` | false | also forks the owner has |
 | `notify` | false | propose one `notify.push` per failure (below); the pipeline then needs a `notify` entry |
+| `notify_max` | none (every failure) | at most this many pushes per call, 1 to 100; see "Pushes" |
 | `max_items` | 50 | at most this many failures, 1 to 100 (`truncated` past it) |
 | `today`, `timezone` | as above | the run's day, for the window |
 
@@ -168,7 +169,7 @@ At least one of `orgs`, `users` or `repos` is required (`github: ci_failures nee
       "unread_checks": 0,
       "since": "2026-10-30",
       "url": "https://github.com/acme-org/api/actions/runs/9001",
-      "title": "main: Nightly / build, Nightly / test failing since 2026-10-30 (9c13c49)"
+      "title": "main: Nightly / build, Nightly / test failing, head commit of 2026-10-30 (9c13c49)"
     }
   ],
   "checked": 9,
@@ -176,17 +177,19 @@ At least one of `orgs`, `users` or `repos` is required (`github: ci_failures nee
   "filtered": 7,
   "skipped": 0,
   "partial": false,
-  "errors": 0
+  "errors": 0,
+  "hidden": [],
+  "notify_skipped": 0
 }
 ```
 
-- `number` is the pull request's number, `null` for a default branch; `since` is the head commit's date (UTC); `title` is a one-line summary for a note (`obsidian.render_note` prints `<repo> <number> <title>`).
+- `number` is the pull request's number, `null` for a default branch; `since` is the **head commit's date** (UTC), not when the failure started: GitHub's check state carries no such time, so a branch red for weeks shows its latest commit's date (the title and the push say `head commit of <date>`, and the field keeps its name for existing notes). `notify_skipped` is how many failures `notify_max` left without a push (below); `title` is a one-line summary for a note (`obsidian.render_note` prints `<repo> <number> <title>`).
 - `checked` counts the head commits looked at; `filtered` what was left out on purpose (older than the window, fork, archived, excluded, another owner's, an empty repository); `skipped` malformed answers; `partial` and `errors` an owner or repository GitHub hid (`FORBIDDEN`, `NOT_FOUND`, typically SAML single sign-on) or did not find. **Checks hidden.** On a **private** repository a fine-grained token reads the commit's combined state but not its check runs (no permission covers them): the failure is still reported, with `checks: []` and `checks_hidden: true`, and its title says `checks hidden from this token`. That is not an error and not `partial`; with some checks readable (commit statuses, say) they are listed and `checks_hidden` is still true. A repository or owner that is really missing still counts in `errors`. A classic token with the `repo` scope reads the check runs (see "The token"). When **no** owner or repository could be read at all the call fails (`github: no owner or repository could be read`) instead of returning an empty list.
-- **Identity**: the fingerprint is the repository, the ref (`branch-<name>` or `pr-<number>`) and the head commit's full SHA. A new commit that still fails is a **new** failure; the same failing commit has the same fingerprint in every run. A failing commit that is re-run green and then fails again keeps its fingerprint.
+- **Identity**: the fingerprint is the repository, the ref (`branch-<name>` or `pr-<number>`) and the head commit's full SHA. A new commit that still fails is a **new** failure; the same failing commit has the same fingerprint in every run. A failing commit that is re-run green and then fails again keeps its fingerprint. The ref uses the branch name as shown (sanitised, 100 characters at most): two branch names that are identical after that on the same commit collapse into one failure (the same commit failing, one push), and renaming a branch gives its failing head a new key, hence one new push; both are accepted, since a key built on the branch name is what makes a push per branch and commit.
 - **Links** are never GitHub's URLs as they are: the workflow run page is used only when its URL is exactly `https://github.com/<this repository>/actions/runs/<digits>` (no job suffix, query, fragment, other host or other repository); otherwise the link is built from the repository name and the validated SHA (`https://github.com/<repo>/commit/<sha>`) or pull request number (`…/pull/<n>`). A commit status's `targetUrl` (any host an integration chose) is never used. An item whose link the SDK's `is_task_link` refuses is skipped.
 - **Untrusted text**: branch, workflow, job and status names are chosen by anyone who can push a branch or a workflow, or post a commit status. They reach the data and the pushes through the SDK's `escape_title` then `plain_text` (control, bidi and zero-width characters removed, 100 characters at most each, 10 names at most, then `and N more`). They are data: `obsidian.render_note` escapes them again for a note, plugin-ntfy sends them as plain text (never Markdown). `tests/recordings/ci-failures-hostile.json` shows hostile names and links.
 
-**Pushes** (`notify: true`). One `notify.push` per failure, titled `CI failing: <repo> <branch>` (or `#<number> (<branch>)`), with the failing checks and the short SHA as body, the link above, and `key` set to the failure's fingerprint. The core sends a keyed push **once for good** (schemas decision 57, amended: the dedupe key is the pipeline, the notify entry and the key, never pruned), so a pipeline that runs every 30 minutes pushes each failing commit once, when it first appears, and again only for a new failing commit. Neither the plugin nor plugin-ntfy keeps state for this (plugin-ntfy keeps none for a keyed push, whatever its `dedupe`). On the first run every current failure is pushed once. A push's link is routed only to a `notify` entry whose `link_prefix` covers it, so give each owner its own `ntfy.push` entry with `link_prefix: https://github.com/<Owner>/` (canonical case, not overlapping); a push no entry covers is skipped by the core (`intent_skipped`), not sent. `notify.push` is a new permission in 0.4.0.
+**Pushes** (`notify: true`). One `notify.push` per failure, titled `CI failing: <repo> <branch>` (or `#<number> (<branch>)`), with the failing checks and the short SHA as body, the link above, and `key` set to the failure's fingerprint. The core sends a keyed push **once for good** (schemas decision 57, amended: the dedupe key is the pipeline, the notify entry and the key, never pruned), so a pipeline that runs every 30 minutes pushes each failing commit once, when it first appears, and again only for a new failing commit. Neither the plugin nor plugin-ntfy keeps state for this (plugin-ntfy keeps none for a keyed push, whatever its `dedupe`). On the first run every current failure is pushed once: **`notify_max`** bounds that burst (the first `notify_max` failures in the data's order, by repository, are pushed; the others stay in the data, counted in `notify_skipped`). The plugin keeps no state, so it cannot tell a first run from the next: failures already pushed in earlier runs still take part of the bound, and a failure past it is not pushed while the bound is full. Use it to tame a first run (then remove it or raise it), not as a permanent setting. A push's link is routed only to a `notify` entry whose `link_prefix` covers it, so give each owner its own `ntfy.push` entry with `link_prefix: https://github.com/<Owner>/` (canonical case, not overlapping); a push no entry covers is skipped by the core (`intent_skipped`), not sent. `notify.push` is a new permission in 0.4.0.
 
 **A note** of the current failures: `obsidian.render_note` (plugin-obsidian) reads any `github.*` source's `items` and prints each as `<repo> <number> <title>` in its `${github}` section, escaped; give it a template of its own and an owned block. The example below rewrites the block on every run, so the note always lists the failures of the last run (`_None._` when all is green). What the note does not show: links (render_note writes plain escaped bullets) and this source's `truncated` / `partial` flags (render_note turns only the task source's flags into alerts; its `expect` alert does fire when the source failed).
 
@@ -369,7 +372,7 @@ Store it as the instance secret `GITHUB_TOKEN` (`/run/secrets/GITHUB_TOKEN` by d
 | `Metadata: Read` | the repository list, push dates, default branch (mandatory anyway) |
 | `Contents: Read` | the default branch's head commit (private repositories) |
 | `Commit statuses: Read` | commit statuses (`StatusContext`) in the combined state |
-| `Actions: Read` | the workflow run behind a check run (name and run link) |
+| `Actions: Read` | optional: the workflow run behind a check run (its workflow name and run link). GitHub's documentation lists it for the REST workflow run endpoints only; whether GraphQL `workflowRun` needs it is **not documented**, and it only matters on private repositories, where a fine-grained token cannot read check runs at all (below). Without it, or without the run, a check is named by its job alone and the link falls back to the commit or pull request |
 | `Pull requests: Read` | the search for your open pull requests (already needed) |
 
 **For `github.updates`**: `Metadata`, `Issues` and `Pull requests` read-only (as the search sources), plus `Contents: Read` for the commits of a pull request's timeline (their author) on private repositories. Nothing else, no write; `viewer { login }` needs no extra permission. The same `GITHUB_TOKEN` serves every source.
@@ -397,7 +400,7 @@ Matches `plugin.yaml` exactly.
 | `github.assigned` | `GITHUB_TOKEN` | fine-grained PAT | same | `POST /graphql` (search) |
 | `github.mentions` | `GITHUB_TOKEN` | fine-grained PAT | same | `POST /graphql` (search) |
 | `github.notifications` | `GITHUB_NOTIFICATIONS_TOKEN` | classic PAT | `notifications` only | `GET /notifications` (never marks anything read) |
-| `github.ci_failures` | `GITHUB_TOKEN` | fine-grained PAT | `Metadata`, `Contents`, `Commit statuses`, `Actions`, `Pull requests`: Read | `POST /graphql` (`repositoryOwner`, `repository`, search) |
+| `github.ci_failures` | `GITHUB_TOKEN` | fine-grained PAT | `Metadata`, `Contents`, `Commit statuses`, `Pull requests`: Read (and `Actions`, optional) | `POST /graphql` (`repositoryOwner`, `repository`, search) |
 | `github.updates` | `GITHUB_TOKEN` | fine-grained PAT | `Metadata`, `Issues`, `Pull requests`, `Contents`: Read | `POST /graphql` (`viewer`, search with timelines) |
 
 **`GITHUB_NOTIFICATIONS_TOKEN` is optional.** Declared in `permissions.optional_secrets`, it is injected only when it resolves, so you create the classic `notifications` token only if you use `github.notifications`; without it that source fails with `secret_missing: GITHUB_NOTIFICATIONS_TOKEN is not set`. The search sources always need `GITHUB_TOKEN`. Optional secrets need a core with decision 56 (unreleased 0.0.x); the manifest's `horae:` range stays `>=0,<0.2`, but an older core rejects `optional_secrets`.

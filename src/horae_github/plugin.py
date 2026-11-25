@@ -63,7 +63,7 @@ from horae_github.notifications import NotificationsClient
 NAME = "github"
 """The plugin's name, also the namespace of its refs (`github.review_requests`) and
 fingerprints (`github:pr:<node id>`)."""
-VERSION = "0.5.2"
+VERSION = "0.5.3"
 COMMAND = ["python3", "-m", "horae_github"]
 """`runtime.command` of `plugin.yaml`. When installing, pin an absolute interpreter that has
 this package (the host's `PATH` is fixed and its working directory empty)."""
@@ -76,6 +76,8 @@ PERMISSIONS = Permissions(
 )
 
 MAX_ITEMS = 200
+MAX_PUSHES = 100
+"""`notify_max` ceiling, and its default (`max_items` of both push sources is at most 100)."""
 MAX_FILTERS = 20
 """`exclude_repos` values."""
 MAX_SEARCHES = 8
@@ -640,6 +642,7 @@ def build(
         include_my_prs: bool = True,
         include_forks: bool = False,
         notify: bool = False,
+        notify_max: int | None = None,
         max_items: int = 50,
         today: str | None = None,
         timezone: str | None = None,
@@ -648,10 +651,13 @@ def build(
         `pushed_within_days` days whose default branch head fails its checks, and your open
         pull requests whose head fails (`include_my_prs`). Archived repositories never, forks
         only with `include_forks`. With `notify`, one `notify.push` per failure, keyed on its
-        fingerprint (repository, ref, head commit): the core sends each key once."""
+        fingerprint (repository, ref, head commit): the core sends each key once.
+        `notify_max` bounds the pushes of one call (a first run can otherwise push every
+        failure at once)."""
         if type(max_items) is not int or not 1 <= max_items <= ci.MAX_ITEMS:
             raise PluginError(f"github: max_items is 1 to {ci.MAX_ITEMS}")
         window = ci.check_window(pushed_within_days)
+        push_cap = _notify_cap(notify_max)
         pr_queries = search_queries(
             CI,
             orgs=orgs or [],
@@ -701,8 +707,9 @@ def build(
                 "partial": walk.errors > 0 or walk.missing > 0,
                 "errors": walk.errors + walk.missing,
                 "hidden": _hidden(walk.hidden),
+                "notify_skipped": _skipped(kept, notify, push_cap),
             },
-            intents=[failure.push() for failure in kept] if notify else [],
+            intents=[failure.push() for failure in kept[:push_cap]] if notify else [],
         )
 
     @plugin.source(f"{NAME}.updates")
@@ -717,6 +724,7 @@ def build(
         include_closed: bool = False,
         include_bots: bool = False,
         notify: bool = False,
+        notify_max: int | None = None,
         max_items: int = 50,
         today: str | None = None,
         timezone: str | None = None,
@@ -726,10 +734,12 @@ def build(
         merged, closed, reopened, asked your review, opened) after your last action on them,
         in the last `since_days` days. Bots are left out unless `include_bots`; closed items
         unless `include_closed`. With `notify`, one `notify.push` per item, keyed on the item
-        and its latest event: the core sends each key once."""
+        and its latest event: the core sends each key once. `notify_max` bounds the pushes of
+        one call (newest first)."""
         if type(max_items) is not int or not 1 <= max_items <= updates.MAX_ITEMS:
             raise PluginError(f"github: max_items is 1 to {updates.MAX_ITEMS}")
         window = updates.check_window(since_days)
+        push_cap = _notify_cap(notify_max)
         if not orgs and not users and not repos:
             raise PluginError("github: updates needs orgs, users or repos")
         try:
@@ -787,11 +797,28 @@ def build(
                 "partial": found.errors > 0,
                 "errors": found.errors,
                 "hidden": _hidden(found.hidden),
+                "notify_skipped": _skipped(kept, notify, push_cap),
             },
-            intents=[item.push() for item in kept] if notify else [],
+            intents=[item.push() for item in kept[:push_cap]] if notify else [],
         )
 
     return plugin
+
+
+def _notify_cap(value: object) -> int:
+    """`notify_max`: at most this many `notify.push` per call (`None`: no bound beyond
+    `max_items`). Nothing is stored here, so the plugin cannot tell a first run from the next
+    one: the core sends each key once, and this bound only limits a burst."""
+    if value is None:
+        return MAX_PUSHES
+    if type(value) is not int or not 1 <= value <= MAX_PUSHES:
+        raise PluginError(f"github: notify_max is 1 to {MAX_PUSHES}")
+    return value
+
+
+def _skipped(kept: Sequence[object], notify: bool, cap: int) -> int:
+    """Items in the data that `notify_max` left without a push."""
+    return max(0, len(kept) - cap) if notify else 0
 
 
 def _hidden(hidden: Sequence[Hidden]) -> list[dict[str, Any]]:

@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.5.3
+
+- `github.ci_failures`, the low-severity follow-ups of #13:
+  - `since` is the head commit's date, not the start of the failure (GitHub's rollup has no
+    such time); the title and the push now say `head commit of <date>` instead of
+    `failing since <date>`. The field keeps its name. Fingerprints are unchanged.
+  - When every owner is unreadable but your pull request search worked, the call returns the
+    pull requests (with `partial`) instead of failing.
+  - An owner that answers page 1 and then nothing is `truncated`, not counted `missing` again;
+    a repository in an owner walk and in `repos` is counted once in `checked`.
+  - New `notify_max` (1 to 100, default: no bound beyond `max_items`) on `github.ci_failures`
+    and `github.updates`: at most that many `notify.push` per call, to tame the first run; the
+    data keeps every item and `notify_skipped` counts the ones left without a push.
+  - `Actions: Read` is documented as optional (not confirmed for GraphQL `workflowRun`; the
+    plugin degrades to the job name and a commit link). Branch-name fingerprint behaviour
+    (collisions, renames) documented as accepted.
+  - Tests: the page-cap test now has pull request queries; new tests for each item above.
+
 ## 0.5.2
 
 - Fix (#17): `github.ci_failures` on private repositories with a fine-grained token. The

@@ -140,7 +140,9 @@ class Failure:
     pr: int | None
     sha: str
     since: str
-    """The head commit's date, `YYYY-MM-DD` (UTC)."""
+    """The head commit's date, `YYYY-MM-DD` (UTC). It is **not** when the failure started: the
+    rollup carries no such time, so a long-failing branch shows its latest commit's date. The
+    field keeps its name for existing notes; the title and the push say "head commit"."""
     checks: tuple[str, ...]
     """Sanitised failing check names, sorted, at most `MAX_CHECKS_SHOWN`."""
     more_checks: int
@@ -183,7 +185,7 @@ class Failure:
     def title(self) -> str:
         """For `obsidian.render_note`, which prefixes the repository and the number."""
         where = self.branch if self.pr is None else f"pull request on {self.branch}"
-        return f"{where}: {self.what} failing since {self.since} ({self.sha[:7]})"
+        return f"{where}: {self.what} failing, head commit of {self.since} ({self.sha[:7]})"
 
     def data(self) -> dict[str, Any]:
         return {
@@ -206,9 +208,10 @@ class Failure:
         # at most 12 + 201 + 15 + 100 characters: under the SDK's 500
         title = f"CI failing: {text(self.repo, MAX_REPO)} {where}"
         body = (
-            f"Checks failed on {self.sha[:7]} ({self.since}); they are hidden from this token."
+            f"Checks failed on {self.sha[:7]} (head commit of {self.since});"
+            " hidden from this token."
             if self.checks_hidden and not self.checks
-            else f"{self.what} failed on {self.sha[:7]} ({self.since})."
+            else f"{self.what} failed on {self.sha[:7]} (head commit of {self.since})."
         )
         return intents.notify_push(
             body,
@@ -235,7 +238,13 @@ class Walk:
     truncated: bool = False
     pages: int = 0
     missing: int = 0
-    """`orgs`, `users` and `repos` values GitHub returned nothing for."""
+    """`orgs`, `users` and `repos` values GitHub returned nothing for (counted once each: an
+    owner that answered a first page and then nothing is `truncated`, not missing)."""
+    prs_read: bool = False
+    """Your pull request search ran and at least one of its queries was answered."""
+    looked: set[tuple[str, int | None]] = field(default_factory=set)
+    """`(lower-case repository, pull request number or None)` already counted in `repos`: a
+    repository in an owner walk and in `repos` is one."""
 
 
 def day_of(value: object) -> date | None:
@@ -351,6 +360,13 @@ class Scope:
     include_forks: bool
 
 
+def _look(walk: Walk, repo: str, pr: int | None) -> None:
+    key = (repo.lower(), pr)
+    if key not in walk.looked:
+        walk.looked.add(key)
+        walk.repos += 1
+
+
 def _keep(walk: Walk, found: Failure | str) -> None:
     if isinstance(found, Failure):
         walk.failures.setdefault(found.fingerprint, found)
@@ -387,7 +403,7 @@ def _repository(walk: Walk, node: object, scope: Scope, owner: str | None) -> bo
     if not isinstance(head, dict):
         walk.skipped += 1
         return True
-    walk.repos += 1
+    _look(walk, repo, None)
     _keep(walk, failure(repo, head.get("name"), None, head.get("target")))
     return True
 
@@ -400,7 +416,7 @@ def default_branches(client: Client, walk: Walk, scope: Scope, deadline: float) 
     """Walk each owner's repositories, then each `repos` value, until the window or time ends."""
     for owner in scope.owners:
         after: str | None = None
-        for _page in range(MAX_OWNER_PAGES):
+        for page in range(MAX_OWNER_PAGES):
             if _out_of_time(client, deadline, walk):
                 walk.truncated = True
                 return
@@ -414,7 +430,10 @@ def default_branches(client: Client, walk: Walk, scope: Scope, deadline: float) 
                 client, walk, OWNER_QUERY, variables, "repositoryOwner", deadline, owner
             )
             if found is None:
-                walk.missing += 1
+                if page == 0:
+                    walk.missing += 1
+                else:  # it answered before: a later page vanished, the walk is incomplete
+                    walk.truncated = True
                 break
             walk.errors += hiding.count
             repositories = found.get("repositories")
@@ -492,6 +511,7 @@ def my_pull_requests(
     )
     walk.pages += 1
     walk.truncated = walk.truncated or found.truncated
+    walk.prs_read = bool(found.nodes) or found.errors == 0
     walk.errors += found.errors
     walk.hidden = merge(walk.hidden, found.hidden)
     for node in found.nodes:
@@ -523,7 +543,7 @@ def my_pull_requests(
         ):
             walk.filtered += 1
             continue
-        walk.repos += 1
+        _look(walk, repo, number)
         _keep(walk, failure(repo, node.get("headRefName"), number, commit))
 
 
@@ -557,7 +577,8 @@ def collect(
             my_pull_requests(client, walk, scope, pr_queries, deadline)
     except _Stop:
         walk.truncated = True
-    if walk.missing and walk.missing >= len(owners) + len(repos):
+    # your pull requests, when they could be read, are a result of their own
+    if walk.missing and walk.missing >= len(owners) + len(repos) and not walk.prs_read:
         raise GitHubError("github: no owner or repository could be read")
     return walk
 

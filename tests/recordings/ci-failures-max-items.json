@@ -31,7 +31,7 @@
           "checks_hidden": false,
           "since": "2026-10-30",
           "url": "https://github.com/acme-org/api/actions/runs/9001",
-          "title": "main: Nightly / build, Nightly / test failing since 2026-10-30 (9c13c49)"
+          "title": "main: Nightly / build, Nightly / test failing, head commit of 2026-10-30 (9c13c49)"
         },
         {
           "fingerprint": "github:ci:acme-org-api:pr-12:19bd293ab160626a19e4ba7c4b1b314fbbc01191::29340806f9fd465b",
@@ -47,7 +47,7 @@
           "checks_hidden": false,
           "since": "2026-10-29",
           "url": "https://github.com/acme-org/api/actions/runs/9100",
-          "title": "pull request on feature/cache: Nightly / unit failing since 2026-10-29 (19bd293)"
+          "title": "pull request on feature/cache: Nightly / unit failing, head commit of 2026-10-29 (19bd293)"
         }
       ],
       "checked": 9,
@@ -56,19 +56,20 @@
       "skipped": 0,
       "partial": false,
       "errors": 0,
-      "hidden": []
+      "hidden": [],
+      "notify_skipped": 0
     },
     "intents": [
       {
         "type": "notify.push",
-        "body": "Nightly / build, Nightly / test failed on 9c13c49 (2026-10-30).",
+        "body": "Nightly / build, Nightly / test failed on 9c13c49 (head commit of 2026-10-30).",
         "title": "CI failing: acme-org/api main",
         "link": "https://github.com/acme-org/api/actions/runs/9001",
         "key": "github:ci:acme-org-api:branch-main:9c13c49ba052aba9eaeb62c1804d5afae10d4ad7::8856c4734226bbbb"
       },
       {
         "type": "notify.push",
-        "body": "Nightly / unit failed on 19bd293 (2026-10-29).",
+        "body": "Nightly / unit failed on 19bd293 (head commit of 2026-10-29).",
         "title": "CI failing: acme-org/api #12 (feature/cache)",
         "link": "https://github.com/acme-org/api/actions/runs/9100",
         "key": "github:ci:acme-org-api:pr-12:19bd293ab160626a19e4ba7c4b1b314fbbc01191::29340806f9fd465b"
