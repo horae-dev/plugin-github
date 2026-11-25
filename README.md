@@ -2,13 +2,13 @@
 
 # plugin-github
 
-Horae plugin: GitHub review requests, assigned issues, mentions and participating notifications as tasks.
+Horae plugin: GitHub review requests, assigned issues, mentions and participating notifications as tasks, and which of your repositories has a failing CI.
 
-> 🚧 **Early.** Review requests, assignments, mentions and participating notifications work.
+> 🚧 **Early.** Review requests, assignments, mentions, participating notifications and CI failures work.
 
 ## What it does
 
-Four sources for a pipeline's `collect` step. Three search GitHub (the fourth, notifications, has [its own section](#participating-notifications)) for open items and returns them as data, and proposes one `task.create` intent per item. The Horae core validates and applies the intents; the plugin never writes anything.
+Five sources for a pipeline's `collect` step. Three search GitHub (the fourth, notifications, has [its own section](#participating-notifications)) for open items and returns them as data, and proposes one `task.create` intent per item. The fifth, `github.ci_failures`, proposes no task: it lists the repositories and pull requests whose CI fails, and can propose one push per new failure ([CI failures](#ci-failures)). The Horae core validates and applies the intents; the plugin never writes anything.
 
 | Source | Finds | Task title | Default due date |
 |---|---|---|---|
@@ -16,6 +16,7 @@ Four sources for a pipeline's `collect` step. Three search GitHub (the fourth, n
 | `github.assigned` | open issues and pull requests assigned to you | `Work on owner/repo#42: <title>` | the milestone's due date, else none |
 | `github.mentions` | open issues and pull requests that mention you | `Answer mention in owner/repo#42: <title>` | the run's day + 2 days |
 | `github.notifications` | unread notifications you participate in, for pull requests and issues | `Review` / `Work on` / `Answer mention in` / `Follow up on owner/repo#42: <title>` by reason | the run's day + 2 days |
+| `github.ci_failures` | default branches and your own open pull requests whose head commit fails its checks | no task (data, and optionally `notify.push`) | none |
 
 ```yaml
 # pipelines/daily-brief.yaml
@@ -47,7 +48,7 @@ The prefix needs at least one path segment (`https://github.com/Acme-Org/`, not 
 
 ### Parameters
 
-All three take:
+The three search sources take:
 
 | Parameter | Default | Meaning |
 |---|---|---|
@@ -124,6 +125,103 @@ Data adds, per item, `reason`, and per call `poll_interval` (GitHub's `X-Poll-In
 
 **Fingerprints.** The notifications API returns no GraphQL node id, so these items use the fallback `github:pr:<owner>-<repo>:<number>::<digest>` (see below), which is **not** equal to the `github:pr:<node id>` the other sources give: an item that is both in your notifications and in `review_requests`, `assigned` or `mentions` is two tasks today. Pick the sources your pipeline needs accordingly (for example `notifications` with the default reasons, without `review_requests` / `mentions`).
 
+### CI failures
+
+`github.ci_failures` answers "which of my repositories has a red CI?" without opening each one. It reads, with GraphQL, within one 25 s deadline:
+
+- **Default branches**: for each `orgs` / `users` owner, the owner's own repositories (not those it only collaborates on), most recently pushed first, 50 per request, with the default branch's head commit and its combined check state (`statusCheckRollup`). Archived repositories are never read; forks only with `include_forks`. Paging **stops at the first repository pushed before the window** (`pushed_within_days` before the run's day): the list is in push order, so all later ones are older too. At most 4 pages (200 repositories) per owner; more inside the window sets `truncated`. Each `repos` value is one direct read of that repository.
+- **Your open pull requests** (`include_my_prs`, on by default): `is:pr is:open author:@me archived:false`, one search per `orgs` / `users` / `repos` value (as for the other sources), with each pull request's head commit and its checks. A pull request whose head commit is older than the window is left out (an abandoned branch).
+
+A **failure** is a head commit whose combined state is `FAILURE` or `ERROR`. `PENDING` (running or expected) is not a failure, nor is a commit without any check. The failing checks are named: a check run as `<workflow> / <job>` (conclusion `FAILURE`, `TIMED_OUT`, `STARTUP_FAILURE`, `ACTION_REQUIRED` or `CANCELLED`), a commit status by its context (`FAILURE`, `ERROR`). Only the first 50 checks of a commit are read; more are reported as `unread_checks`.
+
+| Parameter | Default | Meaning |
+|---|---|---|
+| `orgs`, `users` | none | owners whose repositories are read (`org:` / `user:` for the pull request search, so put an organisation in `orgs` and an account in `users`) |
+| `repos` | none | also these repositories, `owner/name`, read one by one |
+| `exclude_repos` | none | never these repositories (at most 20) |
+| `pushed_within_days` | 30 | only repositories pushed (and pull requests whose head was committed) in the last N days before the run's day, 0 to 365: a stale repository with a red badge is not news |
+| `include_my_prs` | true | also your own open pull requests whose head fails |
+| `include_forks` | false | also forks the owner has |
+| `notify` | false | propose one `notify.push` per failure (below); the pipeline then needs a `notify` entry |
+| `max_items` | 50 | at most this many failures, 1 to 100 (`truncated` past it) |
+| `today`, `timezone` | as above | the run's day, for the window |
+
+At least one of `orgs`, `users` or `repos` is required (`github: ci_failures needs orgs, users or repos`); at most 8 values in all, checked like the other sources' filters. Archived repositories are always skipped: there is no `include_archived`, nobody fixes the CI of an archived repository.
+
+**Data.** One item per failure, sorted by repository, then the default branch before pull requests:
+
+```json
+{
+  "kind": "ci_failures",
+  "day": "2026-10-30",
+  "items": [
+    {
+      "fingerprint": "github:ci:acme-org-api:branch-main:9c13c49…::9effecc7dadaa78a",
+      "repo": "acme-org/api",
+      "branch": "main",
+      "number": null,
+      "sha": "9c13c49",
+      "checks": ["Nightly / build", "Nightly / test"],
+      "more_checks": 0,
+      "unread_checks": 0,
+      "since": "2026-10-30",
+      "url": "https://github.com/acme-org/api/actions/runs/9001",
+      "title": "main: Nightly / build, Nightly / test failing since 2026-10-30 (9c13c49)"
+    }
+  ],
+  "checked": 9,
+  "truncated": false,
+  "filtered": 7,
+  "skipped": 0,
+  "partial": false,
+  "errors": 0
+}
+```
+
+- `number` is the pull request's number, `null` for a default branch; `since` is the head commit's date (UTC); `title` is a one-line summary for a note (`obsidian.render_note` prints `<repo> <number> <title>`).
+- `checked` counts the head commits looked at; `filtered` what was left out on purpose (older than the window, fork, archived, excluded, another owner's, an empty repository); `skipped` malformed answers; `partial` and `errors` an owner or repository GitHub hid (`FORBIDDEN`, `NOT_FOUND`, typically SAML single sign-on) or did not find. When **no** owner or repository could be read at all the call fails (`github: no owner or repository could be read`) instead of returning an empty list.
+- **Identity**: the fingerprint is the repository, the ref (`branch-<name>` or `pr-<number>`) and the head commit's full SHA. A new commit that still fails is a **new** failure; the same failing commit has the same fingerprint in every run. A failing commit that is re-run green and then fails again keeps its fingerprint.
+- **Links** are never GitHub's URLs as they are: the workflow run page is used only when its URL is exactly `https://github.com/<this repository>/actions/runs/<digits>` (no job suffix, query, fragment, other host or other repository); otherwise the link is built from the repository name and the validated SHA (`https://github.com/<repo>/commit/<sha>`) or pull request number (`…/pull/<n>`). A commit status's `targetUrl` (any host an integration chose) is never used. An item whose link the SDK's `is_task_link` refuses is skipped.
+- **Untrusted text**: branch, workflow, job and status names are chosen by anyone who can push a branch or a workflow, or post a commit status. They reach the data and the pushes through the SDK's `escape_title` then `plain_text` (control, bidi and zero-width characters removed, 100 characters at most each, 10 names at most, then `and N more`). They are data: `obsidian.render_note` escapes them again for a note, plugin-ntfy sends them as plain text (never Markdown). `tests/recordings/ci-failures-hostile.json` shows hostile names and links.
+
+**Pushes** (`notify: true`). One `notify.push` per failure, titled `CI failing: <repo> <branch>` (or `#<number> (<branch>)`), with the failing checks and the short SHA as body, the link above, and `key` set to the failure's fingerprint. The core sends a keyed push **once for good** (schemas decision 57, amended: the dedupe key is the pipeline, the notify entry and the key, never pruned), so a pipeline that runs every 30 minutes pushes each failing commit once, when it first appears, and again only for a new failing commit. Neither the plugin nor plugin-ntfy keeps state for this (plugin-ntfy keeps none for a keyed push, whatever its `dedupe`). On the first run every current failure is pushed once. A push's link is routed only to a `notify` entry whose `link_prefix` covers it, so give each owner its own `ntfy.push` entry with `link_prefix: https://github.com/<Owner>/` (canonical case, not overlapping); a push no entry covers is skipped by the core (`intent_skipped`), not sent. `notify.push` is a new permission in 0.4.0.
+
+**A note** of the current failures: `obsidian.render_note` (plugin-obsidian) reads any `github.*` source's `items` and prints each as `<repo> <number> <title>` in its `${github}` section, escaped; give it a template of its own and an owned block. The example below rewrites the block on every run, so the note always lists the failures of the last run (`_None._` when all is green). What the note does not show: links (render_note writes plain escaped bullets) and this source's `truncated` / `partial` flags (render_note turns only the task source's flags into alerts; its `expect` alert does fire when the source failed).
+
+Example, [`examples/ci-watch.yaml`](examples/ci-watch.yaml) (every 30 minutes on weekdays, 08:00 to 20:30, no LLM):
+
+```yaml
+name: ci-watch
+trigger: { cron: "*/30 8-20 * * 1-5" }
+steps:
+  - collect:
+      - github.ci_failures: { orgs: [Acme-Org], users: [ada], today: "{{date}}", notify: true }
+  - transform:
+      - obsidian.render_note:
+          today: "{{date}}"
+          block: ci-failures
+          expect: [github.ci_failures]
+          template: |
+            # CI failures
+
+            Updated ${date}.
+
+            ## Alerts
+
+            ${alerts}
+
+            ## Failing
+
+            ${github}
+  - act:
+      - obsidian.write_note: { path: "Horae/CI.assistant.md", mode: replace-owned }
+  - notify:
+      - ntfy.push: { server: https://ntfy.invalid, topic: CHANGE-ME, link_prefix: "https://github.com/Acme-Org/", dedupe: off }
+      - ntfy.push: { server: https://ntfy.invalid, topic: CHANGE-ME, link_prefix: "https://github.com/ada/", dedupe: off }
+```
+
+**Cost.** One request per 50 repositories inside the window and per `repos` value, plus one per 50 open pull requests per owner: a few requests every run, well inside GitHub's 5,000 points an hour. A rate limit fails the call at once, with the usual message, never slept through.
+
 ### One task per item
 
 The fingerprint is the item's identity, not the kind that found it: `github:pr:<node id>` or `github:issue:<node id>`, from GitHub's global node id, which does not change when the item is renamed or edited. When the node id is missing or malformed, it falls back to the repository and number, `github:pr:<owner>-<repo>:<number>::<digest>` (for example `github:pr:acme-org-api:42::f93d83b33a08d274`; the SDK's `intents.fingerprint` replaces `/` and adds a digest of the raw parts). An issue **transferred** to another repository gets a new node id on GitHub, so it becomes a new task; the old one is not closed by the plugin.
@@ -141,7 +239,7 @@ Titles reach a task only through the SDK's `intents.task_create`, which escapes 
 ## Install and configure
 
 ```
-horae plugin add github@0.2.0
+horae plugin add github@0.4.0
 ```
 
 Pin `runtime.command` to an absolute interpreter that has this package (the host's `PATH` is fixed and its working directory is empty), for example `/opt/plugins/github/.venv/bin/python -m horae_github`.
@@ -159,6 +257,18 @@ Store it as the instance secret `GITHUB_TOKEN` (`/run/secrets/GITHUB_TOKEN` by d
 
 `github.notifications` uses a second secret, see below.
 
+**For `github.ci_failures`**, add these repository permissions, all **read-only**:
+
+| Permission | Why |
+|---|---|
+| `Metadata: Read` | the repository list, push dates, default branch (mandatory anyway) |
+| `Contents: Read` | the default branch's head commit (private repositories) |
+| `Commit statuses: Read` | commit statuses (`StatusContext`) in the combined state |
+| `Actions: Read` | the workflow run behind a check run (name and run link) |
+| `Pull requests: Read` | the search for your open pull requests (already needed) |
+
+Check runs are a gap in GitHub's documentation: the `Checks` permission exists only for GitHub Apps, and no fine-grained personal access token permission is documented for reading check runs. On **public** repositories every token reads them. On a **private** repository this was **not verified** with a fine-grained token: check once that a failing workflow on one of them shows up (with its name in `checks`). If it does not, the token cannot see that repository's check runs; a classic token with the `repo` scope can, but it grants write access to every repository, so prefer keeping such repositories public or watching them another way. A fine-grained token sees the private repositories of **one** resource owner (your account, or one organisation that approved it) and every public repository; `GITHUB_TOKEN` is one secret, so watch public repositories of other owners, or the private ones of the token's owner.
+
 ## Permissions
 
 Matches `plugin.yaml` exactly.
@@ -166,6 +276,7 @@ Matches `plugin.yaml` exactly.
 | Kind | Value | Why |
 |---|---|---|
 | intent | `task.create` | one task per item |
+| intent | `notify.push` | `github.ci_failures` with `notify: true`: one push per new failure |
 | network | `api.github.com` | the GraphQL API (`POST /graphql`) and `GET /notifications`, the only host contacted |
 | secret | `GITHUB_TOKEN` | read-only fine-grained token, above |
 | secret | `GITHUB_NOTIFICATIONS_TOKEN` | classic token, `notifications` scope only, for `github.notifications` |
@@ -179,6 +290,7 @@ Matches `plugin.yaml` exactly.
 | `github.assigned` | `GITHUB_TOKEN` | fine-grained PAT | same | `POST /graphql` (search) |
 | `github.mentions` | `GITHUB_TOKEN` | fine-grained PAT | same | `POST /graphql` (search) |
 | `github.notifications` | `GITHUB_NOTIFICATIONS_TOKEN` | classic PAT | `notifications` only | `GET /notifications` (never marks anything read) |
+| `github.ci_failures` | `GITHUB_TOKEN` | fine-grained PAT | `Metadata`, `Contents`, `Commit statuses`, `Actions`, `Pull requests`: Read | `POST /graphql` (`repositoryOwner`, `repository`, search) |
 
 **`GITHUB_NOTIFICATIONS_TOKEN` is optional.** Declared in `permissions.optional_secrets`, it is injected only when it resolves, so you create the classic `notifications` token only if you use `github.notifications`; without it that source fails with `secret_missing: GITHUB_NOTIFICATIONS_TOKEN is not set`. The search sources always need `GITHUB_TOKEN`. Optional secrets need a core with decision 56 (unreleased 0.0.x); the manifest's `horae:` range stays `>=0,<0.2`, but an older core rejects `optional_secrets`.
 
@@ -206,6 +318,8 @@ Each source either returns its data (flagged `truncated` or `partial` when some 
 | `github: query failed (INTERNAL)` | a GraphQL error other than `FORBIDDEN` / `NOT_FOUND` next to results (those give `partial: true` instead), or any error without results |
 | `github: service unavailable (HTTP 503)` | a gateway error, twice |
 | `github: request timed out`, `github: connection failed (...)`, `github: response too large`, `github: malformed response`, `github: unexpected ...` | network or protocol trouble |
+| `github: no owner or repository could be read` | `github.ci_failures`: GitHub returned nothing for every `orgs`, `users` and `repos` value (misspelt, or hidden by SAML) |
+| `github: ci_failures needs orgs, users or repos`, `github: pushed_within_days is 0 to 365`, `github: max_items is 1 to 100` | a bad `github.ci_failures` parameter |
 | `github: invalid reasons filter`, `github: since must be YYYY-MM-DDTHH:MM:SSZ`, `github: invalid org filter`, `github: at most 8 orgs, users and repos values in all (one search each)`, `github: max_items is 1 to 200`, `github: due offsets are 0 to 365 days`, `github: today must be YYYY-MM-DD`, `github: unknown time zone` | a bad pipeline parameter |
 
 ## Development

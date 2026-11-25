@@ -1,0 +1,12 @@
+{
+  "tool": "github.ci_failures",
+  "params": {
+    "orgs": [
+      "acme-org) OR (x"
+    ],
+    "today": "2026-10-30"
+  },
+  "expect": {
+    "error": "github: invalid org filter"
+  }
+}

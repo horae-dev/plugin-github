@@ -1,0 +1,9 @@
+{
+  "tool": "github.ci_failures",
+  "params": {
+    "today": "2026-10-30"
+  },
+  "expect": {
+    "error": "github: ci_failures needs orgs, users or repos"
+  }
+}

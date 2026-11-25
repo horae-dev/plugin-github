@@ -20,6 +20,7 @@ answer never reaches it.
 
 import email.utils
 import json
+import re
 import time
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
@@ -52,6 +53,10 @@ PARTIAL_ERROR_TYPES = frozenset({"FORBIDDEN", "NOT_FOUND"})
 """GraphQL errors that hide some results (an organisation enforcing SAML on the token, a
 repository the token cannot see) while `data` still holds the visible ones."""
 SECONDARY_LIMIT = b"secondary rate limit"
+RETURNED_REPO_RE = re.compile(r"[^\s/?#%\\\x00-\x1f\x7f]{1,100}/[^\s/?#%\\\x00-\x1f\x7f]{1,100}")
+"""A repository GitHub returned: kept unless it could not be one (whitespace, control
+characters, a second `/`, or `?#%\\` that would change the link built from it); GitHub's own
+naming rules are not applied, so a valid item is never dropped by a stricter pattern."""
 
 QUERY = """\
 query($q: String!, $first: Int!, $after: String) {
@@ -128,15 +133,35 @@ class Client:
     def __repr__(self) -> str:
         return "Client(<token hidden>)"
 
-    def search(self, queries: Sequence[str], *, max_items: int) -> Search:
+    def deadline(self) -> float:
+        """The deadline of a call that starts now: `budget` seconds on the client's clock."""
+        return self._clock() + self._budget
+
+    def time_left(self, deadline: float) -> float:
+        return deadline - self._clock()
+
+    def search(
+        self,
+        queries: Sequence[str],
+        *,
+        max_items: int,
+        query: str = QUERY,
+        deadline: float | None = None,
+        started: bool = False,
+    ) -> Search:
         """Up to `max_items` issues and pull requests matching any of `queries`, in GitHub's
         order, query after query, each node id once; at most `ceil(max_items / 50)` requests
-        per query, all within one deadline."""
-        deadline = self._clock() + self._budget
+        per query, all within one deadline (`deadline`, shared with the caller's other
+        requests, or `budget` seconds from now). `query` is the GraphQL document, whose
+        `search` selection decides the nodes' fields. `started`: the caller already has data
+        from this call, so running out of time before the first page is `truncated`, not an
+        error."""
+        if deadline is None:
+            deadline = self.deadline()
         nodes: list[Any] = []
         seen: set[str] = set()
         errors = 0
-        pages = 0
+        pages = 1 if started else 0
         truncated = False
 
         def keep(node: Any) -> None:
@@ -147,14 +172,16 @@ class Client:
                 seen.add(node_id)
             nodes.append(node)
 
-        for query in queries:
+        for text in queries:
             after: str | None = None
             fetched = 0
             while True:
                 if pages and deadline - self._clock() < MIN_PAGE_S:
                     return Search(nodes[:max_items], True, errors)
                 try:
-                    page = self._page(query, min(PAGE_SIZE, max_items - fetched), after, deadline)
+                    page = self._page(
+                        query, text, min(PAGE_SIZE, max_items - fetched), after, deadline
+                    )
                 except _OutOfTime:
                     if pages:
                         return Search(nodes[:max_items], True, errors)
@@ -174,32 +201,9 @@ class Client:
             return Search(nodes[:max_items], True, errors)
         return Search(nodes, truncated, errors)
 
-    def _page(self, query: str, first: int, after: str | None, deadline: float) -> _Page:
-        variables = {"q": query, "first": first, "after": after}
-        body = json.dumps({"query": QUERY, "variables": variables}).encode()
-        answer = self._post(body, deadline)
-        try:
-            document = json.loads(answer.body)
-        except (UnicodeDecodeError, ValueError, RecursionError):
-            raise GitHubError("github: malformed response") from None
-        if not isinstance(document, dict):
-            raise GitHubError("github: malformed response")
-        search = _get(document, "data", "search")
-        errors = document.get("errors")
-        partial = 0
-        if errors:
-            types = _types(errors)
-            if "RATE_LIMITED" in types:
-                raise RateLimited(self._retry_after(answer.headers))
-            if (
-                not isinstance(search, dict)
-                or not isinstance(errors, list)
-                or len(types) != len(errors)
-                or not set(types) <= PARTIAL_ERROR_TYPES
-            ):
-                known = sorted({kind for kind in types if kind in KNOWN_ERROR_TYPES})
-                raise GitHubError(f"github: query failed ({', '.join(known) or 'unknown error'})")
-            partial = len(errors)
+    def _page(self, query: str, text: str, first: int, after: str | None, deadline: float) -> _Page:
+        variables = {"q": text, "first": first, "after": after}
+        search, partial = self.graphql(query, variables, "search", deadline)
         page_info = _get(search, "pageInfo")
         nodes = _get(search, "nodes")
         if not isinstance(nodes, list) or not isinstance(page_info, dict):
@@ -211,6 +215,46 @@ class Client:
             cursor if isinstance(cursor, str) else None,
             partial,
         )
+
+    def graphql(
+        self,
+        query: str,
+        variables: Mapping[str, Any],
+        root: str,
+        deadline: float,
+        *,
+        allow_missing: bool = False,
+    ) -> tuple[Any, int]:
+        """`data.<root>` of one GraphQL request, and how many `FORBIDDEN` / `NOT_FOUND` errors
+        came with it (results hidden, the rest kept). A `RATE_LIMITED` error, any other error,
+        or errors without a `data.<root>` object raise `GitHubError` (fixed message);
+        `allow_missing` accepts a null `data.<root>` with only those two kinds of errors (an
+        owner the token may not see: the caller counts it and goes on)."""
+        body = json.dumps({"query": query, "variables": dict(variables)}).encode()
+        answer = self._post(body, deadline)
+        try:
+            document = json.loads(answer.body)
+        except (UnicodeDecodeError, ValueError, RecursionError):
+            raise GitHubError("github: malformed response") from None
+        if not isinstance(document, dict):
+            raise GitHubError("github: malformed response")
+        found = _get(document, "data", root)
+        errors = document.get("errors")
+        partial = 0
+        if errors:
+            types = _types(errors)
+            if "RATE_LIMITED" in types:
+                raise RateLimited(self._retry_after(answer.headers))
+            if (
+                not (isinstance(found, dict) or (allow_missing and found is None))
+                or not isinstance(errors, list)
+                or len(types) != len(errors)
+                or not set(types) <= PARTIAL_ERROR_TYPES
+            ):
+                known = sorted({kind for kind in types if kind in KNOWN_ERROR_TYPES})
+                raise GitHubError(f"github: query failed ({', '.join(known) or 'unknown error'})")
+            partial = len(errors)
+        return found, partial
 
     def _post(self, body: bytes, deadline: float) -> Response:
         headers = {

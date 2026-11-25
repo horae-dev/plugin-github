@@ -1,0 +1,50 @@
+{
+  "tool": "github.ci_failures",
+  "params": {
+    "repos": [
+      "acme-org/single",
+      "acme-org/missing"
+    ],
+    "include_my_prs": false,
+    "notify": true,
+    "today": "2026-10-30"
+  },
+  "expect": {
+    "data": {
+      "kind": "ci_failures",
+      "day": "2026-10-30",
+      "items": [
+        {
+          "fingerprint": "github:ci:acme-org-single:branch-main:889fbb4683139946c00aee26dd08bff65d50dbf4::7515cc739156d326",
+          "repo": "acme-org/single",
+          "branch": "main",
+          "number": null,
+          "sha": "889fbb4",
+          "checks": [
+            "Nightly / e2e"
+          ],
+          "more_checks": 0,
+          "unread_checks": 0,
+          "since": "2026-10-30",
+          "url": "https://github.com/acme-org/single/actions/runs/5",
+          "title": "main: Nightly / e2e failing since 2026-10-30 (889fbb4)"
+        }
+      ],
+      "checked": 1,
+      "truncated": false,
+      "filtered": 0,
+      "skipped": 0,
+      "partial": true,
+      "errors": 1
+    },
+    "intents": [
+      {
+        "type": "notify.push",
+        "body": "Nightly / e2e failed on 889fbb4 (2026-10-30).",
+        "title": "CI failing: acme-org/single main",
+        "link": "https://github.com/acme-org/single/actions/runs/5",
+        "key": "github:ci:acme-org-single:branch-main:889fbb4683139946c00aee26dd08bff65d50dbf4::7515cc739156d326"
+      }
+    ]
+  }
+}

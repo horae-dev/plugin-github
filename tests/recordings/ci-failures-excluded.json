@@ -1,0 +1,42 @@
+{
+  "tool": "github.ci_failures",
+  "params": {
+    "orgs": [
+      "acme-org"
+    ],
+    "exclude_repos": [
+      "acme-org/api"
+    ],
+    "today": "2026-10-30"
+  },
+  "expect": {
+    "data": {
+      "kind": "ci_failures",
+      "day": "2026-10-30",
+      "items": [
+        {
+          "fingerprint": "github:ci:acme-org-docs:branch-trunk:1eb974a68bff655ca4a96d8278301e0e1e125494::16848842573f17ca",
+          "repo": "acme-org/docs",
+          "branch": "trunk",
+          "number": null,
+          "sha": "1eb974a",
+          "checks": [
+            "ci/external"
+          ],
+          "more_checks": 0,
+          "unread_checks": 0,
+          "since": "2026-10-19",
+          "url": "https://github.com/acme-org/docs/commit/1eb974a68bff655ca4a96d8278301e0e1e125494",
+          "title": "trunk: ci/external failing since 2026-10-19 (1eb974a)"
+        }
+      ],
+      "checked": 4,
+      "truncated": false,
+      "filtered": 7,
+      "skipped": 0,
+      "partial": false,
+      "errors": 0
+    },
+    "intents": []
+  }
+}

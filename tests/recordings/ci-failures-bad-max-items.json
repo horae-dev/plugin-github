@@ -1,0 +1,13 @@
+{
+  "tool": "github.ci_failures",
+  "params": {
+    "orgs": [
+      "acme-org"
+    ],
+    "max_items": 101,
+    "today": "2026-10-30"
+  },
+  "expect": {
+    "error": "github: max_items is 1 to 100"
+  }
+}

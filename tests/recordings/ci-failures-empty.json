@@ -1,0 +1,24 @@
+{
+  "tool": "github.ci_failures",
+  "params": {
+    "orgs": [
+      "acme-quiet"
+    ],
+    "notify": true,
+    "today": "2026-10-30"
+  },
+  "expect": {
+    "data": {
+      "kind": "ci_failures",
+      "day": "2026-10-30",
+      "items": [],
+      "checked": 1,
+      "truncated": false,
+      "filtered": 0,
+      "skipped": 0,
+      "partial": false,
+      "errors": 0
+    },
+    "intents": []
+  }
+}

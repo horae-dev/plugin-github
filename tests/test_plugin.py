@@ -232,12 +232,18 @@ def test_parse_refuses_malformed_nodes() -> None:
 
 
 def test_fixtures_are_synthetic() -> None:
+    """Every repository in the fixtures is under a synthetic `acme-*` owner."""
     for fixture in load_fixtures():
-        nodes = (((fixture["body"] or {}).get("data") or {}).get("search") or {}).get("nodes", [])
-        for node in nodes:
-            if isinstance(node, dict):
-                repo = node["repository"]["nameWithOwner"]
-                assert repo.startswith("acme-org/") or repo == "not a repo"
+        data = (fixture["body"] or {}).get("data") or {}
+        nodes = (data.get("search") or {}).get("nodes", [])
+        repos = [n["repository"]["nameWithOwner"] for n in nodes if isinstance(n, dict)]
+        owner = data.get("repositoryOwner") or {}
+        found = (owner.get("repositories") or {}).get("nodes", [])
+        if isinstance(data.get("repository"), dict):
+            found = [*found, data["repository"]]
+        repos += [n["nameWithOwner"] for n in found if isinstance(n, dict)]
+        for repo in repos:
+            assert repo.startswith("acme-") or repo == "not a repo"
 
 
 def test_returned_repositories_are_not_held_to_the_filter_rules() -> None:
