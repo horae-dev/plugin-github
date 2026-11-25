@@ -33,7 +33,14 @@
       "filtered": 0,
       "skipped": 0,
       "partial": true,
-      "errors": 1
+      "errors": 1,
+      "hidden": [
+        {
+          "owner": "acme-saml",
+          "reason": "saml",
+          "count": 1
+        }
+      ]
     },
     "intents": []
   }

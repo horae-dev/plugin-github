@@ -549,7 +549,7 @@
               "__typename": "Issue",
               "id": "I_h1",
               "number": 1,
-              "title": "- [ ] task 📅 2020-01-01 🔁 every day [[Secret]] <script>x</script> https://evil.example/a ‮\u0007#tag",
+              "title": "- [ ] task \ud83d\udcc5 2020-01-01 \ud83d\udd01 every day [[Secret]] <script>x</script> https://evil.example/a \u202e\u0007#tag",
               "createdAt": "2026-10-20T10:00:00Z",
               "author": {
                 "__typename": "User",
@@ -566,7 +566,7 @@
                     "createdAt": "2026-10-29T10:00:00Z",
                     "author": {
                       "__typename": "User",
-                      "login": "mal[[x]]‮](https://evil.example) 📅 2020-01-01\n"
+                      "login": "mal[[x]]\u202e](https://evil.example) \ud83d\udcc5 2020-01-01\n"
                     }
                   }
                 ]
@@ -600,7 +600,7 @@
                 "login": "mallory"
               },
               "repository": {
-                "nameWithOwner": "acme-hostile/app‮"
+                "nameWithOwner": "acme-hostile/app\u202e"
               },
               "issueTimeline": {
                 "nodes": []
@@ -921,6 +921,86 @@
           ]
         }
       }
+    }
+  },
+  {
+    "q": "is:issue is:open archived:false sort:updated-desc updated:>=2026-10-16 org:acme-lifetime",
+    "after": null,
+    "status": 200,
+    "headers": {},
+    "body": {
+      "data": {
+        "search": {
+          "pageInfo": {
+            "hasNextPage": false,
+            "endCursor": null
+          },
+          "nodes": [
+            null,
+            null
+          ]
+        }
+      },
+      "errors": [
+        {
+          "type": "FORBIDDEN",
+          "path": [
+            "search",
+            "nodes",
+            0
+          ],
+          "message": "The 'acme-lifetime' organization forbids access via a fine-grained personal access tokens if the token's lifetime is greater than 366 days. Please adjust your token's lifetime at the following URL: https://github.com/settings/personal-access-tokens/1234"
+        },
+        {
+          "type": "FORBIDDEN",
+          "path": [
+            "search",
+            "nodes",
+            1
+          ],
+          "message": "The 'acme-lifetime' organization forbids access via a fine-grained personal access tokens if the token's lifetime is greater than 366 days. Please adjust your token's lifetime at the following URL: https://github.com/settings/personal-access-tokens/1234"
+        }
+      ]
+    }
+  },
+  {
+    "q": "is:pr is:open archived:false sort:updated-desc updated:>=2026-10-16 org:acme-lifetime",
+    "after": null,
+    "status": 200,
+    "headers": {},
+    "body": {
+      "data": {
+        "search": {
+          "pageInfo": {
+            "hasNextPage": false,
+            "endCursor": null
+          },
+          "nodes": [
+            null,
+            null
+          ]
+        }
+      },
+      "errors": [
+        {
+          "type": "FORBIDDEN",
+          "path": [
+            "search",
+            "nodes",
+            0
+          ],
+          "message": "The 'acme-lifetime' organization forbids access via a fine-grained personal access tokens if the token's lifetime is greater than 366 days. Please adjust your token's lifetime at the following URL: https://github.com/settings/personal-access-tokens/1234"
+        },
+        {
+          "type": "FORBIDDEN",
+          "path": [
+            "search",
+            "nodes",
+            1
+          ],
+          "message": "The 'acme-lifetime' organization forbids access via a fine-grained personal access tokens if the token's lifetime is greater than 366 days. Please adjust your token's lifetime at the following URL: https://github.com/settings/personal-access-tokens/1234"
+        }
+      ]
     }
   }
 ]

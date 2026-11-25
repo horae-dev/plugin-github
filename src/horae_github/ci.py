@@ -50,7 +50,10 @@ from horae_github.client import (
     RETURNED_REPO_RE,
     Client,
     GitHubError,
+    Hidden,
+    Hiding,
     _OutOfTime,
+    merge,
 )
 
 NAME = "github"
@@ -65,6 +68,7 @@ MAX_CHECKS_SHOWN = 10
 MAX_CHECK_NAME = 100
 MAX_BRANCH = 100
 MAX_REPO = 201
+HIDDEN_CHECKS = "checks hidden from this token"
 FAILED_ROLLUP = frozenset({"FAILURE", "ERROR"})
 FAILED_CONCLUSIONS = frozenset(
     {"FAILURE", "TIMED_OUT", "STARTUP_FAILURE", "ACTION_REQUIRED", "CANCELLED"}
@@ -144,6 +148,9 @@ class Failure:
     unread_checks: int
     """Checks past the first 50 the query reads (failing or not: unknown)."""
     run_url: str | None
+    checks_hidden: bool = False
+    """GitHub hid (some of) the commit's checks from this token (a fine-grained token cannot
+    read check runs of a private repository): the rollup state says it fails, not what."""
 
     @property
     def ref(self) -> str:
@@ -163,11 +170,13 @@ class Failure:
 
     @property
     def what(self) -> str:
-        names = ", ".join(self.checks) or "checks"
+        names = ", ".join(self.checks) or ("" if self.checks_hidden else "checks")
         if self.more_checks:
             names += f" and {self.more_checks} more"
         if self.unread_checks:
             names += f" ({self.unread_checks} checks not read)"
+        if self.checks_hidden:
+            names = f"{names} (more checks hidden from this token)" if names else HIDDEN_CHECKS
         return names
 
     @property
@@ -186,6 +195,7 @@ class Failure:
             "checks": list(self.checks),
             "more_checks": self.more_checks,
             "unread_checks": self.unread_checks,
+            "checks_hidden": self.checks_hidden,
             "since": self.since,
             "url": self.url,
             "title": self.title,
@@ -195,8 +205,13 @@ class Failure:
         where = self.branch if self.pr is None else f"#{self.pr} ({self.branch})"
         # at most 12 + 201 + 15 + 100 characters: under the SDK's 500
         title = f"CI failing: {text(self.repo, MAX_REPO)} {where}"
+        body = (
+            f"Checks failed on {self.sha[:7]} ({self.since}); they are hidden from this token."
+            if self.checks_hidden and not self.checks
+            else f"{self.what} failed on {self.sha[:7]} ({self.since})."
+        )
         return intents.notify_push(
-            f"{self.what} failed on {self.sha[:7]} ({self.since}).",
+            body,
             title=title,
             link=self.url,
             key=self.fingerprint,
@@ -213,7 +228,10 @@ class Walk:
     skipped: int = 0
     """Malformed answers."""
     errors: int = 0
-    """Owners or repositories GitHub hid (`FORBIDDEN`, `NOT_FOUND`, SAML) or did not find."""
+    """Owners or repositories GitHub hid (`FORBIDDEN`, `NOT_FOUND`, SAML) or did not find.
+    Checks hidden under a readable rollup state are not errors (`Failure.checks_hidden`)."""
+    hidden: tuple[Hidden, ...] = ()
+    """The `FORBIDDEN` ones (counted in `errors` or `missing`), by owner and reason."""
     truncated: bool = False
     pages: int = 0
     missing: int = 0
@@ -237,11 +255,17 @@ def run_link(url: str, repo: str) -> bool:
     return found is not None and found.group(1) == repo and is_task_link(url)
 
 
-def failing_checks(rollup: dict[str, Any], repo: str) -> tuple[list[str], int, str | None]:
-    """`(names, unread, run url)`: the failing contexts' names (sanitised, unique, sorted),
-    how many contexts past the first 50 were not read (failing or not), and the first
-    (sorted) valid workflow run URL of this repository."""
+def failing_checks(rollup: dict[str, Any], repo: str) -> tuple[list[str], int, str | None, bool]:
+    """`(names, unread, run url, hidden)`: the failing contexts' names (sanitised, unique,
+    sorted), how many contexts past the first 50 were not read (failing or not), the first
+    (sorted) valid workflow run URL of this repository, and whether GitHub hid some contexts
+    (a `null` context, or `contexts` itself `null`, next to a readable rollup state)."""
     contexts = rollup.get("contexts")
+    hidden = ("contexts" in rollup and contexts is None) or (
+        isinstance(contexts, dict)
+        and isinstance(contexts.get("nodes"), list)
+        and any(node is None for node in contexts["nodes"])
+    )
     nodes = contexts.get("nodes") if isinstance(contexts, dict) else None
     names: set[str] = set()
     run_urls: list[str] = []
@@ -270,7 +294,7 @@ def failing_checks(rollup: dict[str, Any], repo: str) -> tuple[list[str], int, s
     total = contexts.get("totalCount") if isinstance(contexts, dict) else None
     listed = len(nodes) if isinstance(nodes, list) else 0
     unlisted = total - listed if type(total) is int and total > listed else 0
-    return sorted(names), unlisted, (sorted(run_urls)[0] if run_urls else None)
+    return sorted(names), unlisted, (sorted(run_urls)[0] if run_urls else None), hidden
 
 
 def failure(repo: str, branch: object, pr: int | None, commit: object) -> Failure | str:
@@ -290,7 +314,7 @@ def failure(repo: str, branch: object, pr: int | None, commit: object) -> Failur
     state = rollup.get("state")
     if state not in FAILED_ROLLUP:
         return "passing" if state == "SUCCESS" else "pending"
-    names, unlisted, run_url = failing_checks(rollup, repo)
+    names, unlisted, run_url, hidden = failing_checks(rollup, repo)
     shown_branch = text(branch, MAX_BRANCH) or "?"
     found = Failure(
         repo=repo,
@@ -302,6 +326,7 @@ def failure(repo: str, branch: object, pr: int | None, commit: object) -> Failur
         more_checks=max(0, len(names) - MAX_CHECKS_SHOWN),
         unread_checks=unlisted,
         run_url=run_url,
+        checks_hidden=hidden,
     )
     # the link must be one the SDK (and the core) accepts: a repository name with format,
     # bidi or surrogate characters is skipped, never raised on
@@ -385,11 +410,13 @@ def default_branches(client: Client, walk: Walk, scope: Scope, deadline: float) 
                 "after": after,
                 "isFork": None if scope.include_forks else False,
             }
-            found, hidden = _read(client, walk, OWNER_QUERY, variables, "repositoryOwner", deadline)
+            found, hiding = _read(
+                client, walk, OWNER_QUERY, variables, "repositoryOwner", deadline, owner
+            )
             if found is None:
                 walk.missing += 1
                 break
-            walk.errors += hidden
+            walk.errors += hiding.count
             repositories = found.get("repositories")
             info = repositories.get("pageInfo") if isinstance(repositories, dict) else None
             nodes = repositories.get("nodes") if isinstance(repositories, dict) else None
@@ -411,11 +438,13 @@ def default_branches(client: Client, walk: Walk, scope: Scope, deadline: float) 
             return
         owner, name = value.split("/", 1)
         variables = {"owner": owner, "name": name}
-        found, hidden = _read(client, walk, REPOSITORY_QUERY, variables, "repository", deadline)
+        found, hiding = _read(
+            client, walk, REPOSITORY_QUERY, variables, "repository", deadline, owner
+        )
         if found is None:
             walk.missing += 1
             continue
-        walk.errors += hidden
+        walk.errors += hiding.count
         _repository(walk, found, scope, None)
 
 
@@ -426,9 +455,12 @@ def _read(
     variables: dict[str, Any],
     root: str,
     deadline: float,
-) -> tuple[dict[str, Any] | None, int]:
+    owner: str,
+) -> tuple[dict[str, Any] | None, Hiding]:
     try:
-        found, hidden = client.graphql(query, variables, root, deadline, allow_missing=True)
+        found, hiding = client.graphql(
+            query, variables, root, deadline, allow_missing=True, owner=owner
+        )
     except _OutOfTime:
         if walk.pages:
             walk.truncated = True
@@ -437,7 +469,8 @@ def _read(
     walk.pages += 1
     if found is not None and not isinstance(found, dict):
         raise GitHubError("github: malformed response")
-    return found, hidden
+    walk.hidden = merge(walk.hidden, hiding.hidden)
+    return found, hiding
 
 
 class _Stop(Exception):
@@ -460,6 +493,7 @@ def my_pull_requests(
     walk.pages += 1
     walk.truncated = walk.truncated or found.truncated
     walk.errors += found.errors
+    walk.hidden = merge(walk.hidden, found.hidden)
     for node in found.nodes:
         if not isinstance(node, dict) or node.get("__typename") != "PullRequest":
             walk.skipped += 1

@@ -55,7 +55,7 @@ from horae_sdk import Call, Output, Permissions, Plugin, PluginError, intents, t
 from horae_sdk.tasks import is_task_link
 
 from horae_github import ci, due, updates
-from horae_github.client import RETURNED_REPO_RE, Client, GitHubError
+from horae_github.client import LOGIN_RE, RETURNED_REPO_RE, Client, GitHubError, Hidden
 from horae_github.http import HOST, Transport
 from horae_github.notifications import SECRET as NOTIFICATIONS_SECRET
 from horae_github.notifications import NotificationsClient
@@ -63,7 +63,7 @@ from horae_github.notifications import NotificationsClient
 NAME = "github"
 """The plugin's name, also the namespace of its refs (`github.review_requests`) and
 fingerprints (`github:pr:<node id>`)."""
-VERSION = "0.5.1"
+VERSION = "0.5.2"
 COMMAND = ["python3", "-m", "horae_github"]
 """`runtime.command` of `plugin.yaml`. When installing, pin an absolute interpreter that has
 this package (the host's `PATH` is fixed and its working directory empty)."""
@@ -80,7 +80,6 @@ MAX_FILTERS = 20
 """`exclude_repos` values."""
 MAX_SEARCHES = 8
 """`orgs`, `users` and `repos` values together: one search each."""
-LOGIN_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9_-]{0,38}")
 """A user or organisation login; `_` for Enterprise Managed Users (`ada_acme`)."""
 REPO_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9_-]{0,38}/[A-Za-z0-9._-]{1,100}")
 """An `owner/name` filter value."""
@@ -422,6 +421,7 @@ def build(
                 "skipped": skipped,
                 "partial": found.errors > 0,
                 "errors": found.errors,
+                "hidden": _hidden(found.hidden),
             },
             intents=tasks_,
         )
@@ -700,6 +700,7 @@ def build(
                 "skipped": walk.skipped,
                 "partial": walk.errors > 0 or walk.missing > 0,
                 "errors": walk.errors + walk.missing,
+                "hidden": _hidden(walk.hidden),
             },
             intents=[failure.push() for failure in kept] if notify else [],
         )
@@ -785,11 +786,19 @@ def build(
                 "skipped": found.skipped,
                 "partial": found.errors > 0,
                 "errors": found.errors,
+                "hidden": _hidden(found.hidden),
             },
             intents=[item.push() for item in kept] if notify else [],
         )
 
     return plugin
+
+
+def _hidden(hidden: Sequence[Hidden]) -> list[dict[str, Any]]:
+    """`[{"owner", "reason", "count"}]`: `FORBIDDEN` results by owner (a validated login, or
+    `None` when the search was not scoped to one) and reason (a closed set); GitHub's text and
+    links are never copied."""
+    return [item.data() for item in hidden]
 
 
 def _offset(days: int | None) -> None:

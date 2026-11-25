@@ -24,7 +24,14 @@
       "truncated": false,
       "skipped": 1,
       "partial": true,
-      "errors": 1
+      "errors": 1,
+      "hidden": [
+        {
+          "owner": "acme-org",
+          "reason": "saml",
+          "count": 1
+        }
+      ]
     },
     "intents": [
       {

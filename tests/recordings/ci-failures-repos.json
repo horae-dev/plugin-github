@@ -25,6 +25,7 @@
           ],
           "more_checks": 0,
           "unread_checks": 0,
+          "checks_hidden": false,
           "since": "2026-10-30",
           "url": "https://github.com/acme-org/single/actions/runs/5",
           "title": "main: Nightly / e2e failing since 2026-10-30 (889fbb4)"
@@ -35,7 +36,8 @@
       "filtered": 0,
       "skipped": 0,
       "partial": true,
-      "errors": 1
+      "errors": 1,
+      "hidden": []
     },
     "intents": [
       {
