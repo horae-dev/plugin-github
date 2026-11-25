@@ -8,7 +8,7 @@
   (`since_days`, default 14), open only unless `include_closed`; each item's last 25 timeline
   events decide: your last action (comment, submitted review, force push, close, merge, reopen,
   review request, or opening it; never a commit, whose date and author the committer chooses)
-  against the latest event by someone else; times past the run's day are clamped. Bots (type `Bot`, `[bot]` logins,
+  against the latest event by someone else; times past the day after the run's day are clamped, and a commit's date to the item's `updatedAt`. Bots (type `Bot`, `[bot]` logins,
   commits whose author is no GitHub account) are left out unless `include_bots`; a review
   request counts only when it asks you. No plugin state. Data: repository, number, type,
   sanitised title, `event` (closed set), `by`, `at`, `your_last_action`, link rebuilt from

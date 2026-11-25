@@ -220,17 +220,31 @@ def test_a_pending_review_is_not_an_action() -> None:
     assert found.last.kind == "opened"
 
 
-def test_a_commit_without_a_github_author_counts_as_a_bot() -> None:
+def test_a_commit_without_a_github_author_counts_as_a_bot_on_a_bots_item() -> None:
     commit = {
         "__typename": "PullRequestCommit",
         "id": "PRC",
         "commit": {"committedDate": "2026-10-20T10:00:00Z", "author": {"user": None}},
     }
     node = {**issue(ME, []), "__typename": "PullRequest", "prTimeline": {"nodes": [commit]}}
+    node["author"] = actor("dependabot[bot]", bot=True)
     assert verdict(node) == "old"
     found = verdict(node, include_bots=True)
     assert isinstance(found, updates.Update)
     assert found.by == "someone"
+
+
+def test_a_commit_cannot_claim_to_be_a_bot_on_a_human_item() -> None:
+    """An unlinked or bot e-mail is free to write: it must not hide a push."""
+    commit = {
+        "__typename": "PullRequestCommit",
+        "id": "PRC",
+        "commit": {"committedDate": "2026-10-20T10:00:00Z", "author": {"user": None}},
+    }
+    node = {**issue("bob", []), "__typename": "PullRequest", "prTimeline": {"nodes": [commit]}}
+    found = verdict(node)
+    assert isinstance(found, updates.Update)
+    assert found.last.kind == "pushed"
 
 
 @pytest.mark.parametrize("stamp", ["2026-10-20", "2026-13-40T10:00:00Z", "2026-10-20T10:00:00Z\n"])
@@ -350,7 +364,8 @@ def forged_commit(at: str) -> dict[str, Any]:
 
 
 def test_a_forged_commit_in_your_name_does_not_hide_a_newer_comment() -> None:
-    """Anyone can author a commit with your e-mail and any date: it is not your action."""
+    """Anyone can author a commit with your e-mail and any date: it is not your action (and on
+    someone else's pull request it is their push)."""
     node = {
         **issue("bob", []),
         "__typename": "PullRequest",
@@ -358,7 +373,7 @@ def test_a_forged_commit_in_your_name_does_not_hide_a_newer_comment() -> None:
     }
     found = verdict(node)
     assert isinstance(found, updates.Update)
-    assert found.last.kind == "commented"
+    assert found.last.kind == "pushed"
     assert found.since is None
 
 
@@ -383,3 +398,67 @@ def test_a_future_time_is_clamped_to_the_end_of_the_run_day() -> None:
     found = updates.update(node, ME, "2026-10-16", False, "2026-10-30T23:59:59Z")
     assert isinstance(found, updates.Update)
     assert found.last.at == "2026-10-30T23:59:59Z"
+
+
+def test_a_forged_future_commit_ends_with_your_next_reply() -> None:
+    """A commit's date is capped at the item's `updatedAt`: replying dismisses it."""
+    forged = {
+        "__typename": "PullRequestCommit",
+        "id": "PRC_future",
+        "commit": {"committedDate": "2099-01-01T00:00:00Z", "author": {"user": {"login": "bob"}}},
+    }
+    node = {
+        **issue("bob", []),
+        "__typename": "PullRequest",
+        "prTimeline": {"nodes": [forged, comment(2, ME, 21)]},
+        "updatedAt": "2026-10-21T10:00:00Z",
+    }
+    assert updates.update(node, ME, "2026-10-16", False, "2026-10-30T23:59:59Z") == "old"
+    node["updatedAt"] = "2026-10-22T10:00:00Z"  # a real push after your reply
+    found = updates.update(node, ME, "2026-10-16", False, "2026-10-30T23:59:59Z")
+    assert isinstance(found, updates.Update)
+    assert found.last.at == "2026-10-22T10:00:00Z"
+
+
+def test_a_commit_in_your_name_on_someone_elses_pull_request_is_a_push() -> None:
+    """Anyone can write your e-mail into a commit: it must not hide their push."""
+    node = {
+        **issue("bob", []),
+        "__typename": "PullRequest",
+        "prTimeline": {"nodes": [comment(1, ME, 20), forged_commit("2026-10-22T10:00:00Z")]},
+    }
+    found = verdict(node)
+    assert isinstance(found, updates.Update)
+    assert (found.last.kind, found.by) == ("pushed", "someone")
+
+
+class OneItem:
+    """The viewer, then one search answering `node`."""
+
+    def __init__(self, node: dict[str, Any]) -> None:
+        self.node = node
+
+    def post(
+        self, path: str, body: bytes, headers: Mapping[str, str], *, deadline: float
+    ) -> Response:
+        if "q" not in json.loads(body)["variables"]:
+            document: dict[str, Any] = {"data": {"viewer": {"login": ME}}}
+        else:
+            info = {"hasNextPage": False, "endCursor": None}
+            document = {"data": {"search": {"pageInfo": info, "nodes": [self.node]}}}
+        return Response(200, {}, json.dumps(document).encode())
+
+
+def test_events_after_utc_midnight_are_not_clamped_west_of_utc() -> None:
+    """The run's day is local: 20:30 on 30 October in New York is 31 October 00:30 UTC."""
+    mine = {**comment(1, ME, 31), "createdAt": "2026-10-31T00:30:00Z"}
+    theirs = {**comment(2, "bob", 31), "createdAt": "2026-10-31T00:40:00Z"}
+    found = updates.collect(
+        Client(TOKEN, OneItem(issue("bob", [mine, theirs]))),
+        ["q"],
+        excluded=frozenset(),
+        cutoff=date(2026, 10, 16),
+        include_bots=False,
+        day=date(2026, 10, 30),
+    )
+    assert [u.last.at for u in found.updates] == ["2026-10-31T00:40:00Z"]

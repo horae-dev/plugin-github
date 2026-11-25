@@ -16,11 +16,12 @@ action is the latest event GitHub timestamps and attributes to you (a comment, a
 review, a force push, a close, a merge, a reopen, a review request you made), or the item's
 creation when you opened it. A commit is never your action: its date and author are whatever
 the committer wrote, so a forged commit "by you" in the future would hide real activity. Any
-time after the end of the run's day is clamped to it.
+time after the end of the day following the run's day is clamped to it, and a commit's date to
+the item's `updatedAt`.
 
 The latest **other** event is the latest event by anyone else, bots left out unless
-`include_bots` (an actor of type `Bot`, a login ending in `[bot]`, or a commit whose author is
-no GitHub account), and a review request
+`include_bots` (an actor of type `Bot`, a login ending in `[bot]`, or, on a bot's own item, a
+commit whose author is no GitHub account), and a review request
 counted only when it asks you. The item is new when that event is after your last action (or
 you never acted) and inside the window (`since_days` before the run's day). Reply, review or
 push and it drops out on the next run. When your last action is older than the events read
@@ -41,7 +42,7 @@ rebuilt from the validated repository and the integer number
 import re
 from collections.abc import Sequence
 from dataclasses import dataclass, field, replace
-from datetime import date
+from datetime import date, timedelta
 from typing import Any
 
 from horae_sdk import PluginError, intents
@@ -106,7 +107,7 @@ _PR_EVENTS = f"""\
 ... on ReviewRequestedEvent {{
   id createdAt actor {_ACTOR} requestedReviewer {{ __typename ... on User {{ login }} }}
 }}"""
-_COMMON = f"id number title createdAt author {_ACTOR} repository {{ nameWithOwner }}"
+_COMMON = f"id number title createdAt updatedAt author {_ACTOR} repository {{ nameWithOwner }}"
 QUERY = f"""\
 query($q: String!, $first: Int!, $after: String) {{
   search(type: ISSUE, query: $q, first: $first, after: $after) {{
@@ -134,7 +135,7 @@ query($q: String!, $first: Int!, $after: String) {{
 }}"""
 VIEWER_QUERY = "query { viewer { login } }"
 LATEST = "9999-12-31T23:59:59Z"
-"""No clamp (tests); a call clamps to the end of the run's day."""
+"""No clamp (tests); a call clamps to the end of the day after the run's day."""
 
 
 @dataclass(frozen=True)
@@ -297,12 +298,17 @@ def judge(
     node: dict[str, Any], viewer: str, include_bots: bool, latest: str = LATEST
 ) -> tuple[Event | None, str | None]:
     """`(latest other event, your last action)` of one well-formed item. Times after `latest`
-    (the end of the run's day) are clamped to it.
+    (the end of the following day: GitHub's times are UTC, the run's day is in its time zone)
+    are clamped to it.
 
     A commit's date and author are chosen by whoever made the commit (any e-mail, any date),
-    so a commit is never your action: one carrying your identity is ignored, and another's
-    counts only as someone else's push. Your actions are events GitHub timestamps itself and
-    attributes to the authenticated actor."""
+    so a commit is never your action, and its claims are bounded by what GitHub attests:
+    its date by the item's `updatedAt` (a forged future date cannot outlive your next
+    reply), its "bot" nature only on a bot's own item (an unlinked or bot e-mail is free to
+    claim), and a commit in your name counts as someone's push on an item that is not
+    yours (anyone can write your e-mail into a commit); on your own item it is ignored.
+    Your actions are events GitHub timestamps itself and attributes to the authenticated
+    actor."""
     me = viewer.lower()
     events: list[Event] = []
     opened = _stamp(node.get("createdAt"))
@@ -317,9 +323,20 @@ def judge(
         found = event(raw, viewer)
         if found is not None:
             events.append(found)
+    updated = _stamp(node.get("updatedAt"))
+    own_item = author is not None and (author[0] or "").lower() == me
+    bot_item = author is not None and author[1]
     mine: str | None = None
     other: Event | None = None
     for found in events:  # in timeline order: a later event wins a tie
+        if found.commit:
+            found = replace(found, bot=found.bot and bot_item)
+            if updated is not None and found.at > updated:
+                found = replace(found, at=updated)
+            if found.login is not None and found.login.lower() == me:
+                if own_item:
+                    continue
+                found = replace(found, login=None)
         if found.at > latest:
             found = replace(found, at=latest)
         if found.login is not None and found.login.lower() == me:
@@ -417,7 +434,9 @@ def collect(
                     continue
                 seen.add(node_id)
             nodes.append(node)
-    latest = f"{day.isoformat()}T23:59:59Z" if day is not None else LATEST
+    # GitHub's times are UTC and the run's day is in its own time zone: the end of the
+    # following day is after every real event, whatever the zone
+    latest = f"{(day + timedelta(days=1)).isoformat()}T23:59:59Z" if day is not None else LATEST
     for node in nodes:
         result = update(node, viewer, cutoff.isoformat(), include_bots, latest)
         if result == "malformed":
