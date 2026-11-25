@@ -517,10 +517,10 @@ def collect(
     deadline = client.deadline()
     try:
         default_branches(client, walk, scope, deadline)
-        if pr_queries is not None and not walk.truncated:
+        if pr_queries is not None:
+            # also after the page cap (`truncated`, time left): your pull requests are a
+            # separate read; `my_pull_requests` itself stops when time is short
             my_pull_requests(client, walk, scope, pr_queries, deadline)
-        elif pr_queries is not None:
-            walk.truncated = True
     except _Stop:
         walk.truncated = True
     if walk.missing and walk.missing >= len(owners) + len(repos):

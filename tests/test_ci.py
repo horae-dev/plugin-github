@@ -122,6 +122,41 @@ def test_pages_per_owner_are_capped() -> None:
     assert walk.repos == ci.MAX_OWNER_PAGES
 
 
+def test_your_pull_requests_are_read_after_the_page_cap() -> None:
+    """A capped owner walk (`truncated`) must not hide your failing pull requests."""
+
+    class WithSearch(Endless):
+        def post(
+            self, path: str, body: bytes, headers: Mapping[str, str], *, deadline: float
+        ) -> Response:
+            if "q" not in json.loads(body)["variables"]:
+                return super().post(path, body, headers, deadline=deadline)
+            commit = {
+                "oid": SHA,
+                "committedDate": "2026-10-29T08:00:00Z",
+                "statusCheckRollup": {"state": "FAILURE"},
+            }
+            node = {
+                "__typename": "PullRequest",
+                "id": "PR_1",
+                "number": 7,
+                "headRefName": "fix",
+                "repository": {
+                    "nameWithOwner": "acme-big/r1",
+                    "isArchived": False,
+                    "isFork": False,
+                },
+                "commits": {"nodes": [{"commit": commit}]},
+            }
+            info = {"hasNextPage": False, "endCursor": None}
+            document = {"data": {"search": {"pageInfo": info, "nodes": [node]}}}
+            return Response(200, {}, json.dumps(document).encode())
+
+    walk = collect(Client(TOKEN, WithSearch()), pr_queries=["is:pr"])  # type: ignore[arg-type]
+    assert walk.truncated
+    assert [f.pr for f in walk.failures.values()] == [7]
+
+
 def test_out_of_time_after_a_page_returns_what_was_read() -> None:
     walk = collect(Client(TOKEN, Endless(fail_after=1)))  # type: ignore[arg-type]
     assert walk.truncated
