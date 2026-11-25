@@ -15,6 +15,7 @@ TOOLS = {
     f"{NAME}.assigned",
     f"{NAME}.mentions",
     f"{NAME}.notifications",
+    f"{NAME}.ci_failures",
 }
 
 

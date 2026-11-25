@@ -1,0 +1,41 @@
+{
+  "tool": "github.ci_failures",
+  "params": {
+    "orgs": [
+      "acme-forks"
+    ],
+    "include_forks": true,
+    "include_my_prs": false,
+    "today": "2026-10-30"
+  },
+  "expect": {
+    "data": {
+      "kind": "ci_failures",
+      "day": "2026-10-30",
+      "items": [
+        {
+          "fingerprint": "github:ci:acme-forks-upstream-fork:branch-main:4e41585bb4644658a7675698d1778c956e5da63b::b6cd57d7421758ba",
+          "repo": "acme-forks/upstream-fork",
+          "branch": "main",
+          "number": null,
+          "sha": "4e41585",
+          "checks": [
+            "build"
+          ],
+          "more_checks": 0,
+          "unread_checks": 0,
+          "since": "2026-10-29",
+          "url": "https://github.com/acme-forks/upstream-fork/commit/4e41585bb4644658a7675698d1778c956e5da63b",
+          "title": "main: build failing since 2026-10-29 (4e41585)"
+        }
+      ],
+      "checked": 1,
+      "truncated": false,
+      "filtered": 1,
+      "skipped": 0,
+      "partial": false,
+      "errors": 0
+    },
+    "intents": []
+  }
+}

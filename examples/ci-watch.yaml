@@ -1,0 +1,55 @@
+# pipelines/ci-watch.yaml: which of your repositories has a failing CI (plugin-github 0.4.0).
+#
+# Every 30 minutes on weekdays, 08:00 to 20:30 (the instance time zone). No LLM step.
+# - collect: `github.ci_failures` reads the default branch of every repository of the owners
+#   pushed in the last 30 days, and your own open pull requests, and proposes one `notify.push`
+#   per failing head commit (`notify: true`), keyed on (repository, ref, commit): the core sends
+#   each key once, so a failure is pushed when it first appears, never again for that commit.
+# - transform: plugin-obsidian's `obsidian.render_note` lays the failures out as a note.
+# - act: the note's owned block is replaced on every run (an empty list reads `_None._`).
+# - notify: plugin-ntfy pushes; one entry per owner, because a push with a link is routed only
+#   to an entry whose `link_prefix` covers it (owners in their canonical case, as in github.com
+#   URLs; the prefixes must not overlap). `Acme-Org` and `ada` are placeholders.
+#
+# `ntfy.invalid` and `CHANGE-ME` are placeholders that fail: use your server and topic.
+name: ci-watch
+trigger: { cron: "*/30 8-20 * * 1-5" }
+steps:
+  - collect:
+      - github.ci_failures:
+          orgs: [Acme-Org]
+          users: [ada]
+          today: "{{date}}"
+          notify: true
+  - transform:
+      - obsidian.render_note:
+          today: "{{date}}"
+          block: ci-failures
+          expect: [github.ci_failures]
+          template: |
+            # CI failures
+
+            Updated ${date}.
+
+            ## Alerts
+
+            ${alerts}
+
+            ## Failing
+
+            ${github}
+  - act:
+      - obsidian.write_note: { path: "Horae/CI.assistant.md", mode: replace-owned }
+  - notify:
+      - ntfy.push:
+          server: https://ntfy.invalid
+          topic: CHANGE-ME
+          tags: [rotating_light]
+          link_prefix: "https://github.com/Acme-Org/"
+          dedupe: off            # keyed pushes: the core deduplicates, no ntfy state needed
+      - ntfy.push:
+          server: https://ntfy.invalid
+          topic: CHANGE-ME
+          tags: [rotating_light]
+          link_prefix: "https://github.com/ada/"
+          dedupe: off

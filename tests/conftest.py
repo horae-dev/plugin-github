@@ -2,8 +2,9 @@
 """Shared fixtures: a fake GitHub answering from synthetic data (never real accounts).
 
 `FakeTransport` stands where the HTTPS connection to api.github.com would be: it answers each
-GraphQL request from `tests/fixtures/graphql.json`, chosen by the search string and the page
-cursor the request carries, so the client's parsing, pagination and error handling all run."""
+GraphQL request from `tests/fixtures/graphql.json` and `tests/fixtures/ci.json`, chosen by the
+request's variables (the search string and page cursor, or the owner or repository), so the
+client's parsing, pagination and error handling all run."""
 
 import json
 from collections.abc import Mapping
@@ -39,11 +40,12 @@ class FakeTransport:
         self.requests.append(request)
         variables = request["variables"]
         for fixture in self.fixtures:
-            if fixture["q"] == variables["q"] and fixture["after"] == variables["after"]:
+            wanted = fixture.get("vars") or {"q": fixture["q"], "after": fixture["after"]}
+            if all(key in variables and variables[key] == v for key, v in wanted.items()):
                 return Response(
                     fixture["status"], fixture["headers"], json.dumps(fixture["body"]).encode()
                 )
-        raise AssertionError(f"no fixture for {variables['q']!r} after {variables['after']!r}")
+        raise AssertionError(f"no fixture for {variables!r}")
 
 
 NOTIFICATIONS_TOKEN = "synthetic-classic-token-9876543210"  # noqa: S105 (not a real token)
@@ -74,9 +76,9 @@ class FakeNotifications:
 
 
 def load_fixtures() -> list[dict[str, Any]]:
-    fixtures: list[dict[str, Any]] = json.loads(
-        (HERE / "fixtures" / "graphql.json").read_text("utf-8")
-    )
+    fixtures: list[dict[str, Any]] = []
+    for name in ("graphql.json", "ci.json"):
+        fixtures += json.loads((HERE / "fixtures" / name).read_text("utf-8"))
     return fixtures
 
 

@@ -1,0 +1,13 @@
+{
+  "tool": "github.ci_failures",
+  "params": {
+    "orgs": [
+      "acme-org"
+    ],
+    "pushed_within_days": 400,
+    "today": "2026-10-30"
+  },
+  "expect": {
+    "error": "github: pushed_within_days is 0 to 365"
+  }
+}

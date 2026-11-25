@@ -1,0 +1,1251 @@
+[
+  {
+    "vars": {
+      "login": "acme-org",
+      "after": null,
+      "isFork": false
+    },
+    "status": 200,
+    "headers": {},
+    "body": {
+      "data": {
+        "repositoryOwner": {
+          "repositories": {
+            "pageInfo": {
+              "hasNextPage": true,
+              "endCursor": "Y3Vyc29yOjE"
+            },
+            "nodes": [
+              {
+                "nameWithOwner": "acme-org/api",
+                "isArchived": false,
+                "isFork": false,
+                "pushedAt": "2026-10-30T09:00:00Z",
+                "defaultBranchRef": {
+                  "name": "main",
+                  "target": {
+                    "oid": "9c13c49ba052aba9eaeb62c1804d5afae10d4ad7",
+                    "committedDate": "2026-10-30T08:00:00Z",
+                    "statusCheckRollup": {
+                      "state": "FAILURE",
+                      "contexts": {
+                        "totalCount": 4,
+                        "nodes": [
+                          {
+                            "__typename": "CheckRun",
+                            "name": "build",
+                            "conclusion": "FAILURE",
+                            "checkSuite": {
+                              "workflowRun": {
+                                "url": "https://github.com/acme-org/api/actions/runs/9001",
+                                "workflow": {
+                                  "name": "Nightly"
+                                }
+                              }
+                            }
+                          },
+                          {
+                            "__typename": "CheckRun",
+                            "name": "lint",
+                            "conclusion": "SUCCESS",
+                            "checkSuite": {
+                              "workflowRun": {
+                                "url": "https://github.com/acme-org/api/actions/runs/9001",
+                                "workflow": {
+                                  "name": "Nightly"
+                                }
+                              }
+                            }
+                          },
+                          {
+                            "__typename": "CheckRun",
+                            "name": "test",
+                            "conclusion": "TIMED_OUT",
+                            "checkSuite": {
+                              "workflowRun": {
+                                "url": "https://github.com/acme-org/api/actions/runs/9001",
+                                "workflow": {
+                                  "name": "Nightly"
+                                }
+                              }
+                            }
+                          },
+                          {
+                            "__typename": "CheckRun",
+                            "name": "build",
+                            "conclusion": "FAILURE",
+                            "checkSuite": {
+                              "workflowRun": {
+                                "url": "https://github.com/acme-org/api/actions/runs/9001",
+                                "workflow": {
+                                  "name": "Nightly"
+                                }
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "nameWithOwner": "acme-org/widgets",
+                "isArchived": false,
+                "isFork": false,
+                "pushedAt": "2026-10-29T09:00:00Z",
+                "defaultBranchRef": {
+                  "name": "main",
+                  "target": {
+                    "oid": "2d9649c38edb45c8fbf176bcb6a009278660bbca",
+                    "committedDate": "2026-10-29T08:00:00Z",
+                    "statusCheckRollup": {
+                      "state": "SUCCESS",
+                      "contexts": {
+                        "totalCount": 1,
+                        "nodes": [
+                          {
+                            "__typename": "CheckRun",
+                            "name": "build",
+                            "conclusion": "SUCCESS",
+                            "checkSuite": {
+                              "workflowRun": null
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "nameWithOwner": "acme-org/pending",
+                "isArchived": false,
+                "isFork": false,
+                "pushedAt": "2026-10-29T09:00:00Z",
+                "defaultBranchRef": {
+                  "name": "main",
+                  "target": {
+                    "oid": "d31fa8433278027391d7c866e3d5dda1c317a805",
+                    "committedDate": "2026-10-29T08:00:00Z",
+                    "statusCheckRollup": {
+                      "state": "PENDING",
+                      "contexts": {
+                        "totalCount": 1,
+                        "nodes": [
+                          {
+                            "__typename": "CheckRun",
+                            "name": "build",
+                            "conclusion": null,
+                            "checkSuite": {
+                              "workflowRun": null
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "nameWithOwner": "acme-org/no-checks",
+                "isArchived": false,
+                "isFork": false,
+                "pushedAt": "2026-10-28T09:00:00Z",
+                "defaultBranchRef": {
+                  "name": "main",
+                  "target": {
+                    "oid": "5a12f74c632a3657f31073f43b5689cbdb277ab2",
+                    "committedDate": "2026-10-28T08:00:00Z",
+                    "statusCheckRollup": null
+                  }
+                }
+              },
+              {
+                "nameWithOwner": "acme-org/forked",
+                "isArchived": false,
+                "isFork": true,
+                "pushedAt": "2026-10-28T09:00:00Z",
+                "defaultBranchRef": {
+                  "name": "main",
+                  "target": {
+                    "oid": "674d8c8f7bce5b8f5f3c6c4ff15305927777f965",
+                    "committedDate": "2026-10-28T08:00:00Z",
+                    "statusCheckRollup": {
+                      "state": "FAILURE",
+                      "contexts": {
+                        "totalCount": 1,
+                        "nodes": [
+                          {
+                            "__typename": "CheckRun",
+                            "name": "build",
+                            "conclusion": "FAILURE",
+                            "checkSuite": {
+                              "workflowRun": null
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "nameWithOwner": "acme-org/old-archive",
+                "isArchived": true,
+                "isFork": false,
+                "pushedAt": "2026-10-28T09:00:00Z",
+                "defaultBranchRef": {
+                  "name": "main",
+                  "target": {
+                    "oid": "6c1f069d88e41d0313736485259c2dc72adf0940",
+                    "committedDate": "2026-10-28T08:00:00Z",
+                    "statusCheckRollup": {
+                      "state": "FAILURE",
+                      "contexts": {
+                        "totalCount": 1,
+                        "nodes": [
+                          {
+                            "__typename": "CheckRun",
+                            "name": "build",
+                            "conclusion": "FAILURE",
+                            "checkSuite": {
+                              "workflowRun": null
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "nameWithOwner": "acme-org/empty-repo",
+                "isArchived": false,
+                "isFork": false,
+                "pushedAt": "2026-10-27T09:00:00Z",
+                "defaultBranchRef": null
+              }
+            ]
+          }
+        }
+      }
+    }
+  },
+  {
+    "vars": {
+      "login": "acme-org",
+      "after": "Y3Vyc29yOjE",
+      "isFork": false
+    },
+    "status": 200,
+    "headers": {},
+    "body": {
+      "data": {
+        "repositoryOwner": {
+          "repositories": {
+            "pageInfo": {
+              "hasNextPage": true,
+              "endCursor": "Y3Vyc29yOjI"
+            },
+            "nodes": [
+              {
+                "nameWithOwner": "acme-org/docs",
+                "isArchived": false,
+                "isFork": false,
+                "pushedAt": "2026-10-20T09:00:00Z",
+                "defaultBranchRef": {
+                  "name": "trunk",
+                  "target": {
+                    "oid": "1eb974a68bff655ca4a96d8278301e0e1e125494",
+                    "committedDate": "2026-10-19T08:00:00Z",
+                    "statusCheckRollup": {
+                      "state": "ERROR",
+                      "contexts": {
+                        "totalCount": 2,
+                        "nodes": [
+                          {
+                            "__typename": "StatusContext",
+                            "context": "ci/external",
+                            "state": "ERROR"
+                          },
+                          {
+                            "__typename": "StatusContext",
+                            "context": "ci/ok",
+                            "state": "SUCCESS"
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "nameWithOwner": "acme-org/stale",
+                "isArchived": false,
+                "isFork": false,
+                "pushedAt": "2026-09-01T09:00:00Z",
+                "defaultBranchRef": {
+                  "name": "main",
+                  "target": {
+                    "oid": "fd3b21691467bf7a6b83bb78387c31da51e34e0f",
+                    "committedDate": "2026-09-01T08:00:00Z",
+                    "statusCheckRollup": {
+                      "state": "FAILURE",
+                      "contexts": {
+                        "totalCount": 1,
+                        "nodes": [
+                          {
+                            "__typename": "CheckRun",
+                            "name": "build",
+                            "conclusion": "FAILURE",
+                            "checkSuite": {
+                              "workflowRun": null
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "nameWithOwner": "acme-org/older",
+                "isArchived": false,
+                "isFork": false,
+                "pushedAt": "2026-08-01T09:00:00Z",
+                "defaultBranchRef": {
+                  "name": "main",
+                  "target": {
+                    "oid": "dca5c244c16a9f7304a26ae7fecb08b0a7d07ae5",
+                    "committedDate": "2026-08-01T08:00:00Z",
+                    "statusCheckRollup": {
+                      "state": "FAILURE",
+                      "contexts": {
+                        "totalCount": 1,
+                        "nodes": [
+                          {
+                            "__typename": "CheckRun",
+                            "name": "build",
+                            "conclusion": "FAILURE",
+                            "checkSuite": {
+                              "workflowRun": null
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
+  },
+  {
+    "vars": {
+      "login": "acme-user",
+      "after": null,
+      "isFork": false
+    },
+    "status": 200,
+    "headers": {},
+    "body": {
+      "data": {
+        "repositoryOwner": {
+          "repositories": {
+            "pageInfo": {
+              "hasNextPage": false,
+              "endCursor": null
+            },
+            "nodes": [
+              {
+                "nameWithOwner": "acme-user/dotfiles",
+                "isArchived": false,
+                "isFork": false,
+                "pushedAt": "2026-10-25T09:00:00Z",
+                "defaultBranchRef": {
+                  "name": "main",
+                  "target": {
+                    "oid": "c4e9075f8417cda895e7a4748e7d2b21317ab043",
+                    "committedDate": "2026-10-25T08:00:00Z",
+                    "statusCheckRollup": {
+                      "state": "FAILURE",
+                      "contexts": {
+                        "totalCount": 60,
+                        "nodes": [
+                          {
+                            "__typename": "CheckRun",
+                            "name": "Lint",
+                            "conclusion": "FAILURE",
+                            "checkSuite": {
+                              "workflowRun": {
+                                "url": "https://github.com/acme-user/dotfiles/actions/runs/77",
+                                "workflow": {
+                                  "name": "Lint"
+                                }
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
+  },
+  {
+    "vars": {
+      "q": "is:pr is:open author:@me archived:false org:acme-org",
+      "after": null
+    },
+    "status": 200,
+    "headers": {},
+    "body": {
+      "data": {
+        "search": {
+          "pageInfo": {
+            "hasNextPage": false,
+            "endCursor": null
+          },
+          "nodes": [
+            {
+              "__typename": "PullRequest",
+              "id": "PR_kwDOSYNCI0012",
+              "number": 12,
+              "headRefName": "feature/cache",
+              "repository": {
+                "nameWithOwner": "acme-org/api",
+                "isArchived": false,
+                "isFork": false
+              },
+              "commits": {
+                "nodes": [
+                  {
+                    "commit": {
+                      "oid": "19bd293ab160626a19e4ba7c4b1b314fbbc01191",
+                      "committedDate": "2026-10-29T08:00:00Z",
+                      "statusCheckRollup": {
+                        "state": "FAILURE",
+                        "contexts": {
+                          "totalCount": 1,
+                          "nodes": [
+                            {
+                              "__typename": "CheckRun",
+                              "name": "unit",
+                              "conclusion": "FAILURE",
+                              "checkSuite": {
+                                "workflowRun": {
+                                  "url": "https://github.com/acme-org/api/actions/runs/9100",
+                                  "workflow": {
+                                    "name": "Nightly"
+                                  }
+                                }
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "__typename": "PullRequest",
+              "id": "PR_kwDOSYNCI0013",
+              "number": 13,
+              "headRefName": "feature/green",
+              "repository": {
+                "nameWithOwner": "acme-org/api",
+                "isArchived": false,
+                "isFork": false
+              },
+              "commits": {
+                "nodes": [
+                  {
+                    "commit": {
+                      "oid": "13ead68d2301f51b04ac1cb11b55de762c45a90e",
+                      "committedDate": "2026-10-29T08:00:00Z",
+                      "statusCheckRollup": {
+                        "state": "SUCCESS",
+                        "contexts": {
+                          "totalCount": 1,
+                          "nodes": [
+                            {
+                              "__typename": "CheckRun",
+                              "name": "unit",
+                              "conclusion": "SUCCESS",
+                              "checkSuite": {
+                                "workflowRun": null
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "__typename": "PullRequest",
+              "id": "PR_kwDOSYNCI0014",
+              "number": 14,
+              "headRefName": "feature/x",
+              "repository": {
+                "nameWithOwner": "acme-org/forked",
+                "isArchived": false,
+                "isFork": true
+              },
+              "commits": {
+                "nodes": [
+                  {
+                    "commit": {
+                      "oid": "73f742e7396a7964274b637976b2414151b216fd",
+                      "committedDate": "2026-10-29T08:00:00Z",
+                      "statusCheckRollup": {
+                        "state": "FAILURE",
+                        "contexts": {
+                          "totalCount": 1,
+                          "nodes": [
+                            {
+                              "__typename": "CheckRun",
+                              "name": "unit",
+                              "conclusion": "FAILURE",
+                              "checkSuite": {
+                                "workflowRun": null
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "__typename": "PullRequest",
+              "id": "PR_kwDOSYNCI0015",
+              "number": 15,
+              "headRefName": "feature/abandoned",
+              "repository": {
+                "nameWithOwner": "acme-org/api",
+                "isArchived": false,
+                "isFork": false
+              },
+              "commits": {
+                "nodes": [
+                  {
+                    "commit": {
+                      "oid": "8eadb279470a250deb3f837ea8f2cb70e6b3106d",
+                      "committedDate": "2026-08-01T08:00:00Z",
+                      "statusCheckRollup": {
+                        "state": "FAILURE",
+                        "contexts": {
+                          "totalCount": 1,
+                          "nodes": [
+                            {
+                              "__typename": "CheckRun",
+                              "name": "unit",
+                              "conclusion": "FAILURE",
+                              "checkSuite": {
+                                "workflowRun": null
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    }
+  },
+  {
+    "vars": {
+      "q": "is:pr is:open author:@me archived:false user:acme-user",
+      "after": null
+    },
+    "status": 200,
+    "headers": {},
+    "body": {
+      "data": {
+        "search": {
+          "pageInfo": {
+            "hasNextPage": false,
+            "endCursor": null
+          },
+          "nodes": [
+            {
+              "__typename": "PullRequest",
+              "id": "PR_kwDOSYNCI0003",
+              "number": 3,
+              "headRefName": "auto-backup/2026-10-29",
+              "repository": {
+                "nameWithOwner": "acme-user/dotfiles",
+                "isArchived": false,
+                "isFork": false
+              },
+              "commits": {
+                "nodes": [
+                  {
+                    "commit": {
+                      "oid": "58dc9e02ced28bae38b2251bacff9aec6eaee672",
+                      "committedDate": "2026-10-29T08:00:00Z",
+                      "statusCheckRollup": {
+                        "state": "FAILURE",
+                        "contexts": {
+                          "totalCount": 1,
+                          "nodes": [
+                            {
+                              "__typename": "CheckRun",
+                              "name": "Auto-merge",
+                              "conclusion": "FAILURE",
+                              "checkSuite": {
+                                "workflowRun": null
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    }
+  },
+  {
+    "vars": {
+      "q": "is:pr is:open author:@me archived:false org:acme-org -repo:acme-org/api",
+      "after": null
+    },
+    "status": 200,
+    "headers": {},
+    "body": {
+      "data": {
+        "search": {
+          "pageInfo": {
+            "hasNextPage": false,
+            "endCursor": null
+          },
+          "nodes": [
+            {
+              "__typename": "PullRequest",
+              "id": "PR_kwDOSYNCI0016",
+              "number": 16,
+              "headRefName": "feature/excluded",
+              "repository": {
+                "nameWithOwner": "acme-org/api",
+                "isArchived": false,
+                "isFork": false
+              },
+              "commits": {
+                "nodes": [
+                  {
+                    "commit": {
+                      "oid": "40acdc73786740613e13dce7da0b7ccb87f0a688",
+                      "committedDate": "2026-10-29T08:00:00Z",
+                      "statusCheckRollup": {
+                        "state": "FAILURE",
+                        "contexts": {
+                          "totalCount": 1,
+                          "nodes": [
+                            {
+                              "__typename": "CheckRun",
+                              "name": "unit",
+                              "conclusion": "FAILURE",
+                              "checkSuite": {
+                                "workflowRun": null
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    }
+  },
+  {
+    "vars": {
+      "login": "acme-quiet",
+      "after": null,
+      "isFork": false
+    },
+    "status": 200,
+    "headers": {},
+    "body": {
+      "data": {
+        "repositoryOwner": {
+          "repositories": {
+            "pageInfo": {
+              "hasNextPage": false,
+              "endCursor": null
+            },
+            "nodes": [
+              {
+                "nameWithOwner": "acme-quiet/site",
+                "isArchived": false,
+                "isFork": false,
+                "pushedAt": "2026-10-29T09:00:00Z",
+                "defaultBranchRef": {
+                  "name": "main",
+                  "target": {
+                    "oid": "721841acf067f70e3b95c9b0d7217be600ad90ed",
+                    "committedDate": "2026-10-29T08:00:00Z",
+                    "statusCheckRollup": {
+                      "state": "SUCCESS",
+                      "contexts": {
+                        "totalCount": 1,
+                        "nodes": [
+                          {
+                            "__typename": "CheckRun",
+                            "name": "build",
+                            "conclusion": "SUCCESS",
+                            "checkSuite": {
+                              "workflowRun": null
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
+  },
+  {
+    "vars": {
+      "q": "is:pr is:open author:@me archived:false org:acme-quiet",
+      "after": null
+    },
+    "status": 200,
+    "headers": {},
+    "body": {
+      "data": {
+        "search": {
+          "pageInfo": {
+            "hasNextPage": false,
+            "endCursor": null
+          },
+          "nodes": []
+        }
+      }
+    }
+  },
+  {
+    "vars": {
+      "login": "acme-hostile",
+      "after": null,
+      "isFork": false
+    },
+    "status": 200,
+    "headers": {},
+    "body": {
+      "data": {
+        "repositoryOwner": {
+          "repositories": {
+            "pageInfo": {
+              "hasNextPage": false,
+              "endCursor": null
+            },
+            "nodes": [
+              {
+                "nameWithOwner": "acme-hostile/app",
+                "isArchived": false,
+                "isFork": false,
+                "pushedAt": "2026-10-29T09:00:00Z",
+                "defaultBranchRef": {
+                  "name": "main​<script>📅 2020-01-01",
+                  "target": {
+                    "oid": "cdcacaa025d39cc27d138e025a9222865834f819",
+                    "committedDate": "2026-10-29T08:00:00Z",
+                    "statusCheckRollup": {
+                      "state": "FAILURE",
+                      "contexts": {
+                        "totalCount": 7,
+                        "nodes": [
+                          {
+                            "__typename": "CheckRun",
+                            "name": "Build 📅 2020-01-01 🔁 every day [[Secret]] [x](https://evil.example.org) #tag ‮\u0007",
+                            "conclusion": "FAILURE",
+                            "checkSuite": {
+                              "workflowRun": {
+                                "url": "https://evil.example.org/acme-hostile/app/actions/runs/1",
+                                "workflow": {
+                                  "name": "- [ ] task ⏳ 2026-01-01"
+                                }
+                              }
+                            }
+                          },
+                          {
+                            "__typename": "CheckRun",
+                            "name": "other repo",
+                            "conclusion": "FAILURE",
+                            "checkSuite": {
+                              "workflowRun": {
+                                "url": "https://github.com/acme-org/api/actions/runs/2",
+                                "workflow": null
+                              }
+                            }
+                          },
+                          {
+                            "__typename": "CheckRun",
+                            "name": "job page",
+                            "conclusion": "FAILURE",
+                            "checkSuite": {
+                              "workflowRun": {
+                                "url": "https://github.com/acme-hostile/app/actions/runs/3/job/4",
+                                "workflow": null
+                              }
+                            }
+                          },
+                          {
+                            "__typename": "CheckRun",
+                            "name": "query",
+                            "conclusion": "FAILURE",
+                            "checkSuite": {
+                              "workflowRun": {
+                                "url": "https://github.com/acme-hostile/app/actions/runs/5?x=1",
+                                "workflow": null
+                              }
+                            }
+                          },
+                          {
+                            "__typename": "CheckRun",
+                            "name": "dotdot",
+                            "conclusion": "FAILURE",
+                            "checkSuite": {
+                              "workflowRun": {
+                                "url": "https://github.com/acme-hostile/../app/actions/runs/6",
+                                "workflow": null
+                              }
+                            }
+                          },
+                          {
+                            "__typename": "CheckRun",
+                            "name": 42,
+                            "conclusion": "FAILURE",
+                            "checkSuite": {
+                              "workflowRun": null
+                            }
+                          },
+                          "not an object"
+                        ]
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "nameWithOwner": "acme-hostile/bad-sha",
+                "isArchived": false,
+                "isFork": false,
+                "pushedAt": "2026-10-29T09:00:00Z",
+                "defaultBranchRef": {
+                  "name": "main",
+                  "target": {
+                    "oid": "not-a-sha",
+                    "committedDate": "2026-10-29T08:00:00Z",
+                    "statusCheckRollup": null
+                  }
+                }
+              },
+              {
+                "nameWithOwner": "acme-hostile/../evil",
+                "isArchived": false,
+                "isFork": false,
+                "pushedAt": "2026-10-29T09:00:00Z",
+                "defaultBranchRef": {
+                  "name": "main",
+                  "target": {
+                    "oid": "870405b32b5aaf3b18bbdd75cbc62d96c8bc515a",
+                    "committedDate": "2026-10-29T08:00:00Z",
+                    "statusCheckRollup": {
+                      "state": "FAILURE",
+                      "contexts": {
+                        "totalCount": 1,
+                        "nodes": [
+                          {
+                            "__typename": "CheckRun",
+                            "name": "b",
+                            "conclusion": "FAILURE",
+                            "checkSuite": {
+                              "workflowRun": null
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "nameWithOwner": "acme-org/elsewhere",
+                "isArchived": false,
+                "isFork": false,
+                "pushedAt": "2026-10-29T09:00:00Z",
+                "defaultBranchRef": {
+                  "name": "main",
+                  "target": {
+                    "oid": "71df9e81a28fd59dca86379d93e360dee4443386",
+                    "committedDate": "2026-10-29T08:00:00Z",
+                    "statusCheckRollup": {
+                      "state": "FAILURE",
+                      "contexts": {
+                        "totalCount": 1,
+                        "nodes": [
+                          {
+                            "__typename": "CheckRun",
+                            "name": "b",
+                            "conclusion": "FAILURE",
+                            "checkSuite": {
+                              "workflowRun": null
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "nameWithOwner": "acme-hostile/bad-date",
+                "pushedAt": "yesterday"
+              },
+              {
+                "nameWithOwner": "acme-hostile/bidi‮ppa",
+                "isArchived": false,
+                "isFork": false,
+                "pushedAt": "2026-10-29T09:00:00Z",
+                "defaultBranchRef": {
+                  "name": "main",
+                  "target": {
+                    "oid": "dee92d98809dce111b0c818a4e5f18b5a58f3f24",
+                    "committedDate": "2026-10-29T08:00:00Z",
+                    "statusCheckRollup": {
+                      "state": "FAILURE",
+                      "contexts": {
+                        "totalCount": 1,
+                        "nodes": [
+                          {
+                            "__typename": "CheckRun",
+                            "name": "b",
+                            "conclusion": "FAILURE",
+                            "checkSuite": {
+                              "workflowRun": null
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              },
+              null
+            ]
+          }
+        }
+      }
+    }
+  },
+  {
+    "vars": {
+      "login": "acme-saml",
+      "after": null,
+      "isFork": false
+    },
+    "status": 200,
+    "headers": {},
+    "body": {
+      "data": {
+        "repositoryOwner": {
+          "repositories": {
+            "pageInfo": {
+              "hasNextPage": false,
+              "endCursor": null
+            },
+            "nodes": [
+              {
+                "nameWithOwner": "acme-saml/visible",
+                "isArchived": false,
+                "isFork": false,
+                "pushedAt": "2026-10-29T09:00:00Z",
+                "defaultBranchRef": {
+                  "name": "main",
+                  "target": {
+                    "oid": "cfc2b8d17a9754a9f8fcbee93cc716eed071b527",
+                    "committedDate": "2026-10-29T08:00:00Z",
+                    "statusCheckRollup": {
+                      "state": "FAILURE",
+                      "contexts": {
+                        "totalCount": 1,
+                        "nodes": [
+                          {
+                            "__typename": "CheckRun",
+                            "name": "build",
+                            "conclusion": "FAILURE",
+                            "checkSuite": {
+                              "workflowRun": null
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              },
+              null
+            ]
+          }
+        }
+      },
+      "errors": [
+        {
+          "type": "FORBIDDEN",
+          "message": "Resource protected by organization SAML enforcement."
+        }
+      ]
+    }
+  },
+  {
+    "vars": {
+      "login": "acme-gone",
+      "after": null,
+      "isFork": false
+    },
+    "status": 200,
+    "headers": {},
+    "body": {
+      "data": {
+        "repositoryOwner": null
+      }
+    }
+  },
+  {
+    "vars": {
+      "login": "acme-sso",
+      "after": null,
+      "isFork": false
+    },
+    "status": 200,
+    "headers": {},
+    "body": {
+      "data": {
+        "repositoryOwner": null
+      },
+      "errors": [
+        {
+          "type": "FORBIDDEN",
+          "message": "SAML"
+        }
+      ]
+    }
+  },
+  {
+    "vars": {
+      "login": "acme-limited",
+      "after": null,
+      "isFork": false
+    },
+    "status": 200,
+    "headers": {
+      "x-ratelimit-remaining": "0",
+      "x-ratelimit-reset": "1793350800"
+    },
+    "body": {
+      "errors": [
+        {
+          "type": "RATE_LIMITED",
+          "message": "API rate limit exceeded"
+        }
+      ]
+    }
+  },
+  {
+    "vars": {
+      "login": "acme-busy",
+      "after": null,
+      "isFork": false
+    },
+    "status": 403,
+    "headers": {
+      "retry-after": "60"
+    },
+    "body": {
+      "message": "You have exceeded a secondary rate limit"
+    }
+  },
+  {
+    "vars": {
+      "owner": "acme-org",
+      "name": "single"
+    },
+    "status": 200,
+    "headers": {},
+    "body": {
+      "data": {
+        "repository": {
+          "nameWithOwner": "acme-org/single",
+          "isArchived": false,
+          "isFork": false,
+          "pushedAt": "2026-10-30T09:00:00Z",
+          "defaultBranchRef": {
+            "name": "main",
+            "target": {
+              "oid": "889fbb4683139946c00aee26dd08bff65d50dbf4",
+              "committedDate": "2026-10-30T08:00:00Z",
+              "statusCheckRollup": {
+                "state": "FAILURE",
+                "contexts": {
+                  "totalCount": 1,
+                  "nodes": [
+                    {
+                      "__typename": "CheckRun",
+                      "name": "e2e",
+                      "conclusion": "CANCELLED",
+                      "checkSuite": {
+                        "workflowRun": {
+                          "url": "https://github.com/acme-org/single/actions/runs/5",
+                          "workflow": {
+                            "name": "Nightly"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  {
+    "vars": {
+      "owner": "acme-org",
+      "name": "missing"
+    },
+    "status": 200,
+    "headers": {},
+    "body": {
+      "data": {
+        "repository": null
+      },
+      "errors": [
+        {
+          "type": "NOT_FOUND",
+          "message": "Could not resolve"
+        }
+      ]
+    }
+  },
+  {
+    "vars": {
+      "login": "acme-forks",
+      "after": null,
+      "isFork": null
+    },
+    "status": 200,
+    "headers": {},
+    "body": {
+      "data": {
+        "repositoryOwner": {
+          "repositories": {
+            "pageInfo": {
+              "hasNextPage": false,
+              "endCursor": null
+            },
+            "nodes": [
+              {
+                "nameWithOwner": "acme-forks/upstream-fork",
+                "isArchived": false,
+                "isFork": true,
+                "pushedAt": "2026-10-29T09:00:00Z",
+                "defaultBranchRef": {
+                  "name": "main",
+                  "target": {
+                    "oid": "4e41585bb4644658a7675698d1778c956e5da63b",
+                    "committedDate": "2026-10-29T08:00:00Z",
+                    "statusCheckRollup": {
+                      "state": "FAILURE",
+                      "contexts": {
+                        "totalCount": 1,
+                        "nodes": [
+                          {
+                            "__typename": "CheckRun",
+                            "name": "build",
+                            "conclusion": "FAILURE",
+                            "checkSuite": {
+                              "workflowRun": null
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "nameWithOwner": "acme-forks/archived",
+                "isArchived": true,
+                "isFork": false,
+                "pushedAt": "2026-10-29T09:00:00Z",
+                "defaultBranchRef": {
+                  "name": "main",
+                  "target": {
+                    "oid": "7229d75c83bc370eb663695cc9e9a5bfa4d565ef",
+                    "committedDate": "2026-10-29T08:00:00Z",
+                    "statusCheckRollup": {
+                      "state": "FAILURE",
+                      "contexts": {
+                        "totalCount": 1,
+                        "nodes": [
+                          {
+                            "__typename": "CheckRun",
+                            "name": "build",
+                            "conclusion": "FAILURE",
+                            "checkSuite": {
+                              "workflowRun": null
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
+  }
+]

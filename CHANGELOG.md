@@ -1,5 +1,29 @@
 # Changelog
 
+## 0.4.0
+
+- New source `github.ci_failures`: which repositories have a failing CI. For each `orgs` /
+  `users` owner, the default branch head of the owner's own repositories pushed in the last
+  `pushed_within_days` (default 30; paging stops at the first older repository, at most 200
+  per owner), plus `repos` read one by one and, with `include_my_prs` (default), your own open
+  pull requests. A failure is a combined check state of `FAILURE` or `ERROR` (`PENDING` is
+  not); the failing check runs and commit statuses are named. Archived repositories are never
+  read, forks only with `include_forks`. Fingerprint: repository, ref and head SHA. Links are
+  the workflow run page only when its URL is exactly this repository's
+  `/actions/runs/<digits>`, else the commit or pull request page built from validated parts.
+  Parameters `orgs`, `users`, `repos`, `exclude_repos`, `pushed_within_days`,
+  `include_my_prs`, `include_forks`, `notify`, `max_items`, `today`, `timezone`.
+- **New permission, intent `notify.push`** (to approve at install): with `notify: true`,
+  `github.ci_failures` proposes one push per failure, `key` = its fingerprint, so the core
+  sends each failing commit once (schemas decision 57, amended). Off by default: a pipeline
+  without a `notify` entry would leave the pushes unrouted.
+- `GITHUB_TOKEN` needs, for this source only, `Contents`, `Commit statuses` and `Actions`
+  read-only on top of the existing permissions (README, "The token").
+- Example pipeline `examples/ci-watch.yaml`: a note of the current failures
+  (`obsidian.render_note`) and a push per new failure (plugin-ntfy).
+- Internal: `Client.graphql` (one request, partial errors counted) and `Client.search` taking
+  a query document and a shared deadline.
+
 ## 0.3.0
 
 - **Installs with `horae plugin add`** (horae-dev/horae#199): `horae-sdk` now comes from PyPI

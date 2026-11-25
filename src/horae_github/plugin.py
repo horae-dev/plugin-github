@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-"""The plugin: three sources, one per kind of GitHub work waiting for you.
+"""The plugin: sources for the GitHub work waiting for you.
 
 - `github.review_requests`: open pull requests whose review is requested from you;
 - `github.assigned`: open issues and pull requests assigned to you;
@@ -26,6 +26,10 @@ matches any of the values. `exclude_repos` applies to every search.
   no node id, so its fingerprint is the repository-and-number fallback and does **not** collapse
   with the node-id fingerprint of the search sources.
 
+- `github.ci_failures`: repositories whose default branch, or your own open pull requests,
+  have a failing CI (see `ci.py`). It proposes no task: data for a note, and with `notify`
+  one `notify.push` per failure, keyed on its fingerprint so the core sends it once.
+
 The tokens are declared secrets, read at call time; they never appear in data, intents, errors
 or logs.
 """
@@ -40,8 +44,8 @@ from typing import Any
 from horae_sdk import Call, Output, Permissions, Plugin, PluginError, intents, tasks
 from horae_sdk.tasks import is_task_link
 
-from horae_github import due
-from horae_github.client import Client, GitHubError
+from horae_github import ci, due
+from horae_github.client import RETURNED_REPO_RE, Client, GitHubError
 from horae_github.http import HOST, Transport
 from horae_github.notifications import SECRET as NOTIFICATIONS_SECRET
 from horae_github.notifications import NotificationsClient
@@ -49,13 +53,13 @@ from horae_github.notifications import NotificationsClient
 NAME = "github"
 """The plugin's name, also the namespace of its refs (`github.review_requests`) and
 fingerprints (`github:pr:<node id>`)."""
-VERSION = "0.3.0"
+VERSION = "0.4.0"
 COMMAND = ["python3", "-m", "horae_github"]
 """`runtime.command` of `plugin.yaml`. When installing, pin an absolute interpreter that has
 this package (the host's `PATH` is fixed and its working directory empty)."""
 SECRET = "GITHUB_TOKEN"  # noqa: S105 (the secret's name, not its value)
 PERMISSIONS = Permissions(
-    intents=["task.create"],
+    intents=["task.create", "notify.push"],
     network=[HOST],
     secrets=[SECRET],
     optional_secrets=[NOTIFICATIONS_SECRET],
@@ -70,10 +74,6 @@ LOGIN_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9_-]{0,38}")
 """A user or organisation login; `_` for Enterprise Managed Users (`ada_acme`)."""
 REPO_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9_-]{0,38}/[A-Za-z0-9._-]{1,100}")
 """An `owner/name` filter value."""
-RETURNED_REPO_RE = re.compile(r"[^\s/?#%\\\x00-\x1f\x7f]{1,100}/[^\s/?#%\\\x00-\x1f\x7f]{1,100}")
-"""A repository GitHub returned: kept unless it could not be one (whitespace, control
-characters, a second `/`, or `?#%\\` that would change the link built from it); GitHub's own
-naming rules are not applied, so a valid item is never dropped by a stricter pattern."""
 NODE_ID_RE = re.compile(r"[A-Za-z0-9_=-]{1,100}")
 """All four are used with `fullmatch` only (`$` would accept a trailing line break)."""
 TYPES = {"PullRequest": ("pr", "pull"), "Issue": ("issue", "issues")}
@@ -151,6 +151,8 @@ MENTIONED = Kind(
     "-assignee:@me -review-requested:@me",
     "Answer mention in",
 )
+CI = Kind("ci_failures", "ci_failures", ci.PR_SEARCH, "", "")
+"""Only its search qualifiers are used: your open pull requests."""
 
 
 def default_client(token: str) -> Client:
@@ -317,7 +319,10 @@ def build(
         NAME,
         version=VERSION,
         permissions=PERMISSIONS,
-        description="GitHub review requests, assignments, mentions and notifications as tasks.",
+        description=(
+            "GitHub review requests, assignments, mentions and notifications as tasks; "
+            "failing CI on your repositories and pull requests."
+        ),
     )
 
     def collect(
@@ -603,6 +608,81 @@ def build(
                 "rate_limit_remaining": found.rate_limit_remaining,
             },
             intents=tasks_,
+        )
+
+    @plugin.source(f"{NAME}.ci_failures")
+    def ci_failures(
+        call: Call,
+        orgs: list[str] | None = None,
+        users: list[str] | None = None,
+        repos: list[str] | None = None,
+        exclude_repos: list[str] | None = None,
+        pushed_within_days: int = 30,
+        include_my_prs: bool = True,
+        include_forks: bool = False,
+        notify: bool = False,
+        max_items: int = 50,
+        today: str | None = None,
+        timezone: str | None = None,
+    ) -> Output:
+        """Repositories of `orgs` / `users` (and `repos`) pushed in the last
+        `pushed_within_days` days whose default branch head fails its checks, and your open
+        pull requests whose head fails (`include_my_prs`). Archived repositories never, forks
+        only with `include_forks`. With `notify`, one `notify.push` per failure, keyed on its
+        fingerprint (repository, ref, head commit): the core sends each key once."""
+        if type(max_items) is not int or not 1 <= max_items <= ci.MAX_ITEMS:
+            raise PluginError(f"github: max_items is 1 to {ci.MAX_ITEMS}")
+        window = ci.check_window(pushed_within_days)
+        pr_queries = search_queries(
+            CI,
+            orgs=orgs or [],
+            users=users or [],
+            repos=repos or [],
+            exclude_repos=exclude_repos or [],
+            skip_covered=False,
+        )
+        owners = list(dict.fromkeys([*(orgs or []), *(users or [])]))
+        only = list(dict.fromkeys(repos or []))
+        if not owners and not only:
+            raise PluginError("github: ci_failures needs orgs, users or repos")
+        try:
+            day = due.run_day(today, timezone, environ, clock)
+        except due.DueError as error:
+            raise PluginError(str(error)) from None
+        token = environ.get(SECRET)
+        if not token:
+            raise PluginError(f"github: {SECRET} is not set")
+        try:
+            walk = ci.collect(
+                client(token),
+                owners=owners,
+                repos=only,
+                excluded=frozenset(v.lower() for v in exclude_repos or []),
+                day=day,
+                pushed_within_days=window,
+                include_forks=include_forks,
+                pr_queries=pr_queries if include_my_prs else None,
+            )
+        except GitHubError as error:
+            raise PluginError(str(error)) from None
+        ordered = sorted(
+            walk.failures.values(),
+            key=lambda f: (f.repo.lower(), f.pr is not None, f.pr or 0, f.branch, f.sha),
+        )
+        kept = ordered[:max_items]
+        return Output(
+            {
+                "kind": "ci_failures",
+                "day": day.isoformat(),
+                "items": [failure.data() for failure in kept],
+                "checked": walk.repos,
+                "truncated": walk.truncated or len(ordered) > max_items,
+                "filtered": walk.filtered,
+                "skipped": walk.skipped,
+                "partial": walk.errors > 0 or walk.missing > 0,
+                "errors": walk.errors + walk.missing,
+            },
+            intents=[failure.push() for failure in kept] if notify else [],
         )
 
     return plugin

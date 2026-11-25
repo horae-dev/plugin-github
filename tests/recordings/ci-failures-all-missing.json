@@ -1,0 +1,13 @@
+{
+  "tool": "github.ci_failures",
+  "params": {
+    "users": [
+      "acme-gone"
+    ],
+    "include_my_prs": false,
+    "today": "2026-10-30"
+  },
+  "expect": {
+    "error": "github: no owner or repository could be read"
+  }
+}
